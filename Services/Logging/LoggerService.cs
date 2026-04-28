@@ -1,5 +1,4 @@
-﻿using System.Text;
-using System.Text.Json;
+﻿using System.Reflection;
 
 namespace QuilvianSystemBackend.Services.Logging
 {
@@ -18,107 +17,192 @@ namespace QuilvianSystemBackend.Services.Logging
 
         public Task InfoAsync(string module, string action, string message, object? data = null)
         {
-            return WriteAsync("INFO", module, action, message, null, data);
+            return WriteAsync("INF", module, action, message, null, data);
         }
 
         public Task WarningAsync(string module, string action, string message, object? data = null)
         {
-            return WriteAsync("WARNING", module, action, message, null, data);
+            return WriteAsync("WRN", module, action, message, null, data);
         }
 
         public Task ErrorAsync(string module, string action, string message, Exception? exception = null, object? data = null)
         {
-            return WriteAsync("ERROR", module, action, message, exception, data);
+            return WriteAsync("ERR", module, action, message, exception, data);
         }
 
         public Task AuditAsync(string module, string action, string message, object? data = null)
         {
-            return WriteAsync("AUDIT", module, action, message, null, data);
+            return WriteAsync("AUD", module, action, message, null, data);
         }
 
         private async Task WriteAsync(
-            string level,
-            string module,
-            string action,
-            string message,
-            Exception? exception,
-            object? data)
+    string level,
+    string module,
+    string action,
+    string message,
+    Exception? exception,
+    object? data)
         {
             var now = DateTime.Now;
-            var dateText = now.ToString("dd-MM-yyyy");
+            var fileDateText = now.ToString("dd_MM_yyyy");
 
             var rootPath = _environment.ContentRootPath;
-            var logDirectory = Path.Combine(rootPath, "Logs", module.ToLower());
+            var logDirectory = Path.Combine(rootPath, "Logs");
 
             Directory.CreateDirectory(logDirectory);
 
-            var filePath = Path.Combine(logDirectory, $"logger-{dateText}.txt");
+            var filePath = Path.Combine(logDirectory, $"LogActivity_{fileDateText}.txt");
 
             var httpContext = _httpContextAccessor.HttpContext;
 
-            var ipAddress = GetIpAddress(httpContext);
             var path = httpContext?.Request.Path.ToString() ?? "-";
-            var method = httpContext?.Request.Method ?? "-";
-            var host = httpContext?.Request.Host.ToString() ?? "-";
-            var scheme = httpContext?.Request.Scheme ?? "-";
-            var queryString = httpContext?.Request.QueryString.ToString() ?? "-";
+            var ipAddress = GetIpAddress(httpContext);
 
             var userAgent = httpContext?.Request.Headers["User-Agent"].FirstOrDefault() ?? "-";
-            var referer = httpContext?.Request.Headers["Referer"].FirstOrDefault() ?? "-";
-            var origin = httpContext?.Request.Headers["Origin"].FirstOrDefault() ?? "-";
             var acceptLanguage = httpContext?.Request.Headers["Accept-Language"].FirstOrDefault() ?? "-";
 
             var browserInfo = ParseBrowser(userAgent);
             var osInfo = ParseOperatingSystem(userAgent);
             var deviceInfo = ParseDevice(userAgent);
 
-            var userId = httpContext?.User?.FindFirst("user_id")?.Value ?? "-";
-            var email = httpContext?.User?.FindFirst("email")?.Value ?? "-";
-            var username = httpContext?.User?.FindFirst("username")?.Value ?? "-";
+            var userId = GetClaimValue(httpContext, "user_id", ClaimTypesNameIdentifier());
+            var username = GetClaimValue(httpContext, "username", ClaimTypesName());
+            var email = GetClaimValue(httpContext, "email", ClaimTypesEmail());
 
-            var logBuilder = new StringBuilder();
+            userId = GetValueFromData(data, "UserId", "Id") ?? userId;
+            username = GetValueFromData(data, "Username", "UserName") ?? username;
+            email = GetValueFromData(data, "Email") ?? email;
 
-            logBuilder.AppendLine("==================================================");
-            logBuilder.AppendLine($"Time        : {now:yyyy-MM-dd HH:mm:ss}");
-            logBuilder.AppendLine($"Level       : {level}");
-            logBuilder.AppendLine($"Module      : {module}");
-            logBuilder.AppendLine($"Action      : {action}");
-            logBuilder.AppendLine($"Message     : {message}");
-            logBuilder.AppendLine($"Method      : {method}");
-            logBuilder.AppendLine($"Scheme      : {scheme}");
-            logBuilder.AppendLine($"Host        : {host}");
-            logBuilder.AppendLine($"Path        : {path}");
-            logBuilder.AppendLine($"QueryString : {queryString}");
-            logBuilder.AppendLine($"IP Address  : {ipAddress}");
-            logBuilder.AppendLine($"UserId      : {userId}");
-            logBuilder.AppendLine($"Username    : {username}");
-            logBuilder.AppendLine($"Email       : {email}");
-            logBuilder.AppendLine($"Browser     : {browserInfo}");
-            logBuilder.AppendLine($"OS          : {osInfo}");
-            logBuilder.AppendLine($"Device      : {deviceInfo}");
-            logBuilder.AppendLine($"Language    : {acceptLanguage}");
-            logBuilder.AppendLine($"Origin      : {origin}");
-            logBuilder.AppendLine($"Referer     : {referer}");
-            logBuilder.AppendLine($"User-Agent  : {userAgent}");
+            var eventName = BuildEventName(module, action, level);
+            var clientInfo = $"{browserInfo} / {osInfo} / {deviceInfo}";
 
-            if (data != null)
-            {
-                logBuilder.AppendLine("Data        :");
-                logBuilder.AppendLine(JsonSerializer.Serialize(data, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                }));
-            }
+            var cleanMessage = message;
 
             if (exception != null)
             {
-                logBuilder.AppendLine("Exception   :");
-                logBuilder.AppendLine(exception.ToString());
+                cleanMessage = $"{message} | Exception={exception.GetType().Name}: {exception.Message}";
             }
 
-            logBuilder.AppendLine();
+            var separator = new string('=', 120);
 
-            await File.AppendAllTextAsync(filePath, logBuilder.ToString());
+            var firstLine =
+                $"{now:yyyy-MM-dd HH:mm:ss} " +
+                $"[{level}] " +
+                $"{eventName} | " +
+                $"Module=\"{Sanitize(module)}\" " +
+                $"Action=\"{Sanitize(action)}\" " +
+                $"Message=\"{Sanitize(cleanMessage)}\" " +
+                $"Path=\"{Sanitize(path)}\"";
+
+            var secondLine =
+                $"------> " +
+                $"UserId=\"{Sanitize(userId)}\" " +
+                $"User=\"{Sanitize(username)}\" " +
+                $"Email=\"{Sanitize(email)}\" " +
+                $"Ip=\"{Sanitize(ipAddress)}\" " +
+                $"Client=\"{Sanitize(clientInfo)}\" " +
+                $"Lang=\"{Sanitize(acceptLanguage)}\"";
+
+            var logText =
+                firstLine + Environment.NewLine +
+                secondLine + Environment.NewLine +
+                separator + Environment.NewLine;
+
+            await File.AppendAllTextAsync(filePath, logText);
+        }
+
+        private static string BuildEventName(string module, string action, string level)
+        {
+            var cleanModule = ToLogToken(module);
+            var cleanAction = ToLogToken(action);
+
+            if (string.IsNullOrWhiteSpace(cleanModule))
+            {
+                cleanModule = "APP";
+            }
+
+            if (string.IsNullOrWhiteSpace(cleanAction))
+            {
+                cleanAction = level;
+            }
+
+            return $"{cleanModule}_{cleanAction}";
+        }
+
+        private static string ToLogToken(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            var chars = value
+                .Replace(".", "_")
+                .Replace("-", "_")
+                .Replace(" ", "_")
+                .Where(x => char.IsLetterOrDigit(x) || x == '_')
+                .ToArray();
+
+            return new string(chars).ToUpper();
+        }
+
+        private static string GetClaimValue(HttpContext? httpContext, params string[] claimTypes)
+        {
+            if (httpContext?.User?.Identity?.IsAuthenticated != true)
+            {
+                return "-";
+            }
+
+            foreach (var claimType in claimTypes)
+            {
+                var value = httpContext.User.FindFirst(claimType)?.Value;
+
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+
+            return "-";
+        }
+
+        private static string? GetValueFromData(object? data, params string[] propertyNames)
+        {
+            if (data == null)
+            {
+                return null;
+            }
+
+            var dataType = data.GetType();
+
+            foreach (var propertyName in propertyNames)
+            {
+                var property = dataType.GetProperty(
+                    propertyName,
+                    BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase
+                );
+
+                if (property == null)
+                {
+                    continue;
+                }
+
+                var value = property.GetValue(data);
+
+                if (value == null)
+                {
+                    continue;
+                }
+
+                var text = value.ToString();
+
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    return text;
+                }
+            }
+
+            return null;
         }
 
         private static string GetIpAddress(HttpContext? httpContext)
@@ -248,6 +332,36 @@ namespace QuilvianSystemBackend.Services.Logging
             }
 
             return "Desktop";
+        }
+
+        private static string Sanitize(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return "-";
+            }
+
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"")
+                .Replace("\r", " ")
+                .Replace("\n", " ")
+                .Trim();
+        }
+
+        private static string ClaimTypesNameIdentifier()
+        {
+            return System.Security.Claims.ClaimTypes.NameIdentifier;
+        }
+
+        private static string ClaimTypesName()
+        {
+            return System.Security.Claims.ClaimTypes.Name;
+        }
+
+        private static string ClaimTypesEmail()
+        {
+            return System.Security.Claims.ClaimTypes.Email;
         }
     }
 }

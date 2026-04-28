@@ -111,9 +111,9 @@ namespace QuilvianSystemBackend.Controllers
                     "Login gagal. Akun tidak aktif.",
                     new
                     {
-                        user.Id,
-                        user.Email,
-                        user.UserName
+                        UserId = user.Id,
+                        Username = user.UserName,
+                        Email = user.Email
                     }
                 );
 
@@ -133,6 +133,7 @@ namespace QuilvianSystemBackend.Controllers
                     {
                         user.Id,
                         user.Email,
+                        user.UserName,
                         user.AccessValidUntil
                     }
                 );
@@ -177,9 +178,9 @@ namespace QuilvianSystemBackend.Controllers
                     "Login gagal. Password salah.",
                     new
                     {
-                        user.Id,
-                        user.Email,
-                        user.UserName
+                        UserId = user.Id,
+                        Username = user.UserName,
+                        Email = user.Email
                     }
                 );
 
@@ -203,10 +204,9 @@ namespace QuilvianSystemBackend.Controllers
                 "Login berhasil.",
                 new
                 {
-                    user.Id,
-                    user.Email,
-                    user.UserName,
-                    Roles = roles
+                    UserId = user.Id,
+                    Username = user.UserName,
+                    Email = user.Email
                 }
             );
 
@@ -232,6 +232,16 @@ namespace QuilvianSystemBackend.Controllers
 
             if (!Guid.TryParse(userIdText, out var userId))
             {
+                await _loggerService.WarningAsync(
+                    "Auth",
+                    "Me",
+                    "Gagal mengambil profile. Token tidak valid.",
+                    new
+                    {
+                        UserIdText = userIdText
+                    }
+                );
+
                 return Unauthorized(ApiResponse<object>.Fail(
                     StatusCodes.Status401Unauthorized,
                     _languageService.GetMessage(MessageKeys.AuthTokenInvalid)
@@ -242,13 +252,60 @@ namespace QuilvianSystemBackend.Controllers
 
             if (user == null)
             {
+                await _loggerService.WarningAsync(
+                    "Auth",
+                    "Me",
+                    "Gagal mengambil profile. User tidak ditemukan.",
+                    new
+                    {
+                        UserId = userId
+                    }
+                );
+
                 return Unauthorized(ApiResponse<object>.Fail(
                     StatusCodes.Status401Unauthorized,
                     _languageService.GetMessage(MessageKeys.AuthUserNotFound)
                 ));
             }
 
+            if (!user.IsActive)
+            {
+                await _loggerService.WarningAsync(
+                    "Auth",
+                    "Me",
+                    "Gagal mengambil profile. Akun tidak aktif.",
+                    new
+                    {
+                        user.Id,
+                        user.Email,
+                        user.UserName
+                    }
+                );
+
+                return Unauthorized(ApiResponse<object>.Fail(
+                    StatusCodes.Status401Unauthorized,
+                    _languageService.GetMessage(MessageKeys.AuthAccountInactive)
+                ));
+            }
+
             var roles = await _userManager.GetRolesAsync(user);
+
+            await _loggerService.InfoAsync(
+                "Auth",
+                "Me",
+                "Profile user berhasil diambil.",
+                new
+                {
+                    user.Id,
+                    user.Email,
+                    user.UserName,
+                    user.FullName,
+                    user.UserType,
+                    user.DepartmentId,
+                    user.PositionId,
+                    Roles = roles
+                }
+            );
 
             return Ok(ApiResponse<UserLoginResponse>.Ok(
                 BuildUserResponse(user, roles),
@@ -267,6 +324,16 @@ namespace QuilvianSystemBackend.Controllers
 
             if (!Guid.TryParse(userIdText, out var userId))
             {
+                await _loggerService.WarningAsync(
+                    "Auth",
+                    "Refresh",
+                    "Gagal refresh session. Session tidak valid.",
+                    new
+                    {
+                        UserIdText = userIdText
+                    }
+                );
+
                 return Unauthorized(ApiResponse<object>.Fail(
                     StatusCodes.Status401Unauthorized,
                     _languageService.GetMessage(MessageKeys.AuthSessionInvalid)
@@ -277,6 +344,16 @@ namespace QuilvianSystemBackend.Controllers
 
             if (user == null)
             {
+                await _loggerService.WarningAsync(
+                    "Auth",
+                    "Refresh",
+                    "Gagal refresh session. User tidak ditemukan.",
+                    new
+                    {
+                        UserId = userId
+                    }
+                );
+
                 return Unauthorized(ApiResponse<object>.Fail(
                     StatusCodes.Status401Unauthorized,
                     _languageService.GetMessage(MessageKeys.AuthUserNotFound)
@@ -285,6 +362,18 @@ namespace QuilvianSystemBackend.Controllers
 
             if (!user.IsActive)
             {
+                await _loggerService.WarningAsync(
+                    "Auth",
+                    "Refresh",
+                    "Gagal refresh session. Akun tidak aktif.",
+                    new
+                    {
+                        user.Id,
+                        user.Email,
+                        user.UserName
+                    }
+                );
+
                 return Unauthorized(ApiResponse<object>.Fail(
                     StatusCodes.Status401Unauthorized,
                     _languageService.GetMessage(MessageKeys.AuthAccountInactive)
@@ -293,6 +382,19 @@ namespace QuilvianSystemBackend.Controllers
 
             if (user.AccessValidUntil.HasValue && user.AccessValidUntil.Value < DateTime.UtcNow)
             {
+                await _loggerService.WarningAsync(
+                    "Auth",
+                    "Refresh",
+                    "Gagal refresh session. Masa akses akun sudah berakhir.",
+                    new
+                    {
+                        user.Id,
+                        user.Email,
+                        user.UserName,
+                        user.AccessValidUntil
+                    }
+                );
+
                 return Unauthorized(ApiResponse<object>.Fail(
                     StatusCodes.Status401Unauthorized,
                     _languageService.GetMessage(MessageKeys.AuthAccessExpired)
@@ -310,9 +412,9 @@ namespace QuilvianSystemBackend.Controllers
                 "Session diperpanjang.",
                 new
                 {
-                    user.Id,
-                    user.Email,
-                    user.UserName
+                    UserId = user.Id,
+                    Username = user.UserName,
+                    Email = user.Email
                 }
             );
 
@@ -333,12 +435,30 @@ namespace QuilvianSystemBackend.Controllers
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<IActionResult> Logout()
         {
+            var userId =
+                User.FindFirstValue("user_id") ??
+                User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            var username =
+                User.FindFirstValue("username") ??
+                User.FindFirstValue(ClaimTypes.Name);
+
+            var email =
+                User.FindFirstValue("email") ??
+                User.FindFirstValue(ClaimTypes.Email);
+
             ClearAuthCookie();
 
             await _loggerService.InfoAsync(
                 "Auth",
                 "Logout",
-                "Logout berhasil."
+                "Logout berhasil.",
+                new
+                {
+                    UserId = userId,
+                    Username = username,
+                    Email = email
+                }
             );
 
             return Ok(ApiResponse<object>.Ok(
@@ -380,6 +500,7 @@ namespace QuilvianSystemBackend.Controllers
                 new Claim("user_type", user.UserType.ToString()),
                 new Claim("hospital_id", user.HospitalId?.ToString() ?? string.Empty),
                 new Claim("department_id", user.DepartmentId?.ToString() ?? string.Empty),
+                new Claim("position_id", user.PositionId?.ToString() ?? string.Empty),
 
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
@@ -476,7 +597,8 @@ namespace QuilvianSystemBackend.Controllers
                 IsActive = user.IsActive,
                 MustChangePassword = user.MustChangePassword,
                 HospitalId = user.HospitalId,
-                DepartmentId = user.DepartmentId
+                DepartmentId = user.DepartmentId,
+                PositionId = user.PositionId
             };
         }
     }

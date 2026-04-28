@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using QuilvianSystemBackend.Middlewares;
 using QuilvianSystemBackend.Models;
 using QuilvianSystemBackend.Repositories;
 using QuilvianSystemBackend.Seeders;
 using QuilvianSystemBackend.Services.Language;
 using QuilvianSystemBackend.Services.Logging;
+using QuilvianSystemBackend.Services.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -129,6 +131,7 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<LanguageService>();
 builder.Services.AddScoped<LoggerService>();
+builder.Services.AddScoped<AccessPermissionService>();
 
 builder.Services.AddAuthorization();
 
@@ -176,11 +179,14 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
 // Seeder SuperAdmin
 // Ini TIDAK melakukan migration otomatis.
 // Pastikan dotnet ef database update sudah dijalankan dulu.
 await SuperAdminSeeder.SeedAsync(app.Services);
 await AppVersionSeeder.SeedAsync(app.Services);
+await AccessMenuSeeder.SeedAsync(app.Services);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

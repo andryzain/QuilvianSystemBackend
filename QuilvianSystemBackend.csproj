@@ -25,7 +25,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Areas\Administrator\MasterData\" />
     <Folder Include="Areas\Administrator\UserManagement\" />
     <Folder Include="Areas\Administrator\Dashboard\" />
     <Folder Include="Areas\Administrator\DocumentManagement\" />
@@ -51,7 +50,7 @@
     <Folder Include="Areas\HealthServices\RegistrationManagement\" />
     <Folder Include="Areas\HealthServices\OutpatientManagement\" />
     <Folder Include="Areas\HealthServices\Views\" />
-    <Folder Include="Logs\auth\" />
+    <Folder Include="Logs\" />
   </ItemGroup>
 
 </Project>

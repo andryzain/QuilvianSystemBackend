@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using QuilvianSystemBackend.Areas.Administrator.MasterData.Models;
 using QuilvianSystemBackend.Enum;
 
 namespace QuilvianSystemBackend.Models
@@ -13,6 +14,8 @@ namespace QuilvianSystemBackend.Models
 
         public Guid? DepartmentId { get; set; }
 
+        public Guid? PositionId { get; set; }
+
         public bool IsActive { get; set; } = true;
 
         public bool MustChangePassword { get; set; } = false;
@@ -21,8 +24,12 @@ namespace QuilvianSystemBackend.Models
 
         public DateTime? AccessValidUntil { get; set; }
 
-        public DateTime CreateDateTime { get; set; } = DateTime.Now;
+        public DateTime CreateDateTime { get; set; } = DateTime.UtcNow;
 
         public DateTime? UpdateDateTime { get; set; }
+
+        public MstDepartment? Department { get; set; }
+
+        public MstPosition? Position { get; set; }
     }
 }

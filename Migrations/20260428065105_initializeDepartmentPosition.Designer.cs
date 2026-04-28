@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QuilvianSystemBackend.Repositories;
@@ -11,9 +12,10 @@ using QuilvianSystemBackend.Repositories;
 namespace QuilvianSystemBackend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260428065105_initializeDepartmentPosition")]
+    partial class initializeDepartmentPosition
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -134,7 +136,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("CancelBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("CancelDateTime")
+                    b.Property<DateTime>("CancelDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreateBy")
@@ -148,7 +150,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("DeleteBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("DeleteDateTime")
+                    b.Property<DateTime>("DeleteDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DepartmentCode")
@@ -183,7 +185,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("UpdateBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("UpdateDateTime")
+                    b.Property<DateTime>("UpdateDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
@@ -205,7 +207,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("CancelBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("CancelDateTime")
+                    b.Property<DateTime>("CancelDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreateBy")
@@ -219,7 +221,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("DeleteBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("DeleteDateTime")
+                    b.Property<DateTime>("DeleteDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("DepartmentId")
@@ -257,7 +259,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("UpdateBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("UpdateDateTime")
+                    b.Property<DateTime>("UpdateDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
@@ -438,7 +440,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("CancelBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("CancelDateTime")
+                    b.Property<DateTime>("CancelDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("ControllerAccessId")
@@ -455,7 +457,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("DeleteBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("DeleteDateTime")
+                    b.Property<DateTime>("DeleteDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("DepartmentId")
@@ -487,7 +489,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("UpdateBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("UpdateDateTime")
+                    b.Property<DateTime>("UpdateDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("UserType")
@@ -525,7 +527,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("CancelBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("CancelDateTime")
+                    b.Property<DateTime>("CancelDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("ControllerAccessId")
@@ -542,7 +544,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("DeleteBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("DeleteDateTime")
+                    b.Property<DateTime>("DeleteDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
@@ -585,7 +587,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("UpdateBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("UpdateDateTime")
+                    b.Property<DateTime>("UpdateDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
@@ -611,7 +613,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("CancelBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("CancelDateTime")
+                    b.Property<DateTime>("CancelDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreateBy")
@@ -625,7 +627,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("DeleteBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("DeleteDateTime")
+                    b.Property<DateTime>("DeleteDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
@@ -665,7 +667,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("UpdateBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("UpdateDateTime")
+                    b.Property<DateTime>("UpdateDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
@@ -702,7 +704,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("CancelBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("CancelDateTime")
+                    b.Property<DateTime>("CancelDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreateBy")
@@ -716,7 +718,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("DeleteBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("DeleteDateTime")
+                    b.Property<DateTime>("DeleteDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
@@ -762,7 +764,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("UpdateBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("UpdateDateTime")
+                    b.Property<DateTime>("UpdateDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
@@ -787,7 +789,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("CancelBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("CancelDateTime")
+                    b.Property<DateTime>("CancelDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("ControllerName")
@@ -806,7 +808,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("DeleteBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("DeleteDateTime")
+                    b.Property<DateTime>("DeleteDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
@@ -848,7 +850,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("UpdateBy")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("UpdateDateTime")
+                    b.Property<DateTime>("UpdateDateTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");

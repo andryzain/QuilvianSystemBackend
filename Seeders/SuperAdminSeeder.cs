@@ -6,6 +6,9 @@ namespace QuilvianSystemBackend.Seeders
 {
     public static class SuperAdminSeeder
     {
+        private const string SuperAdminRoleName = "SuperAdmin";
+        private const string UserRoleName = "User";
+
         public static async Task SeedAsync(IServiceProvider serviceProvider)
         {
             using var scope = serviceProvider.CreateScope();
@@ -21,6 +24,22 @@ namespace QuilvianSystemBackend.Seeders
                 return;
             }
 
+            // 1. Pastikan role global tersedia
+            await EnsureRoleAsync(
+                roleManager,
+                SuperAdminRoleName,
+                "Full access system administrator",
+                true
+            );
+
+            await EnsureRoleAsync(
+                roleManager,
+                UserRoleName,
+                "Default application user",
+                true
+            );
+
+            // 2. Ambil config superadmin
             var username = configuration["SeedSuperAdmin:Username"];
             var email = configuration["SeedSuperAdmin:Email"];
             var password = configuration["SeedSuperAdmin:Password"];
@@ -35,30 +54,7 @@ namespace QuilvianSystemBackend.Seeders
                 throw new InvalidOperationException("Konfigurasi SeedSuperAdmin belum lengkap di appsettings.json.");
             }
 
-            const string superAdminRoleName = "SuperAdmin";
-
-            var roleExists = await roleManager.RoleExistsAsync(superAdminRoleName);
-
-            if (!roleExists)
-            {
-                var role = new ApplicationRole
-                {
-                    Name = superAdminRoleName,
-                    NormalizedName = superAdminRoleName.ToUpper(),
-                    Description = "Full access system administrator",
-                    IsSystemRole = true,
-                    CreateDateTime = DateTime.UtcNow
-                };
-
-                var createRoleResult = await roleManager.CreateAsync(role);
-
-                if (!createRoleResult.Succeeded)
-                {
-                    var errors = string.Join(", ", createRoleResult.Errors.Select(x => x.Description));
-                    throw new InvalidOperationException($"Gagal membuat role SuperAdmin: {errors}");
-                }
-            }
-
+            // 3. Cek apakah user superadmin sudah ada
             var existingUser = await userManager.FindByNameAsync(username);
 
             if (existingUser == null)
@@ -66,6 +62,7 @@ namespace QuilvianSystemBackend.Seeders
                 existingUser = await userManager.FindByEmailAsync(email);
             }
 
+            // 4. Jika belum ada, buat user superadmin
             if (existingUser == null)
             {
                 var user = new ApplicationUser
@@ -75,7 +72,9 @@ namespace QuilvianSystemBackend.Seeders
                     Email = email,
                     NormalizedEmail = email.ToUpper(),
                     EmailConfirmed = true,
-                    FullName = string.IsNullOrWhiteSpace(fullName) ? "Super Administrator" : fullName,
+                    FullName = string.IsNullOrWhiteSpace(fullName)
+                        ? "Super Administrator"
+                        : fullName,
                     UserType = UserType.SuperAdmin,
                     IsActive = true,
                     MustChangePassword = false,
@@ -90,7 +89,7 @@ namespace QuilvianSystemBackend.Seeders
                     throw new InvalidOperationException($"Gagal membuat user SuperAdmin: {errors}");
                 }
 
-                var addRoleResult = await userManager.AddToRoleAsync(user, superAdminRoleName);
+                var addRoleResult = await userManager.AddToRoleAsync(user, SuperAdminRoleName);
 
                 if (!addRoleResult.Succeeded)
                 {
@@ -101,17 +100,49 @@ namespace QuilvianSystemBackend.Seeders
                 return;
             }
 
-            var isInRole = await userManager.IsInRoleAsync(existingUser, superAdminRoleName);
+            // 5. Jika user sudah ada, pastikan tetap punya role SuperAdmin
+            var isInSuperAdminRole = await userManager.IsInRoleAsync(existingUser, SuperAdminRoleName);
 
-            if (!isInRole)
+            if (!isInSuperAdminRole)
             {
-                var addRoleResult = await userManager.AddToRoleAsync(existingUser, superAdminRoleName);
+                var addRoleResult = await userManager.AddToRoleAsync(existingUser, SuperAdminRoleName);
 
                 if (!addRoleResult.Succeeded)
                 {
                     var errors = string.Join(", ", addRoleResult.Errors.Select(x => x.Description));
                     throw new InvalidOperationException($"Gagal menambahkan role SuperAdmin ke existing user: {errors}");
                 }
+            }
+        }
+
+        private static async Task EnsureRoleAsync(
+            RoleManager<ApplicationRole> roleManager,
+            string roleName,
+            string description,
+            bool isSystemRole)
+        {
+            var roleExists = await roleManager.RoleExistsAsync(roleName);
+
+            if (roleExists)
+            {
+                return;
+            }
+
+            var role = new ApplicationRole
+            {
+                Name = roleName,
+                NormalizedName = roleName.ToUpper(),
+                Description = description,
+                IsSystemRole = isSystemRole,
+                CreateDateTime = DateTime.UtcNow
+            };
+
+            var createRoleResult = await roleManager.CreateAsync(role);
+
+            if (!createRoleResult.Succeeded)
+            {
+                var errors = string.Join(", ", createRoleResult.Errors.Select(x => x.Description));
+                throw new InvalidOperationException($"Gagal membuat role {roleName}: {errors}");
             }
         }
     }
