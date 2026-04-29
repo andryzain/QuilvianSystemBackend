@@ -1,5 +1,4 @@
 ﻿using QuilvianSystemBackend.Areas.Administrator.MasterData.Models;
-using QuilvianSystemBackend.Enum;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
@@ -14,10 +13,7 @@ namespace QuilvianSystemBackend.Models
         public Guid DepartmentId { get; set; }
 
         [Required]
-        public Guid PositionId { get; set; }
-
-        [Required]
-        public UserType UserType { get; set; }
+        public Guid PositionId { get; set; }       
 
         [Required]
         public Guid ControllerAccessId { get; set; }

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QuilvianSystemBackend.Repositories;
@@ -11,9 +12,10 @@ using QuilvianSystemBackend.Repositories;
 namespace QuilvianSystemBackend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260429035027_initializeUserManagement")]
+    partial class initializeUserManagement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -270,916 +272,6 @@ namespace QuilvianSystemBackend.Migrations
                     b.ToTable("MstPosition", "public");
                 });
 
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.DctFeeProfile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CancelBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("CancelDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("ConsultationFee")
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<Guid>("CreateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreateDateTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<Guid>("DeleteBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeleteDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("DoctorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("DoctorSharePercentage")
-                        .HasColumnType("numeric(5,2)");
-
-                    b.Property<string>("FeeCalculationType")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<decimal>("FollowUpFee")
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<bool>("IsCancel")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsDelete")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsFeeActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<decimal>("TelemedicineFee")
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<Guid>("UpdateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdateDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DoctorId")
-                        .IsUnique();
-
-                    b.ToTable("DctFeeProfile", "public");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.DctLicense", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CancelBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("CancelDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("CreateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreateDateTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<Guid>("DeleteBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeleteDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("DoctorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ExpiredDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("FilePath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("IsCancel")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsDelete")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsPrimary")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsVerified")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<string>("IssuedBy")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTime?>("IssuedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LicenseNumber")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("LicenseType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<Guid>("UpdateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdateDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DoctorId");
-
-                    b.HasIndex("LicenseNumber");
-
-                    b.HasIndex("LicenseType");
-
-                    b.ToTable("DctLicense", "public");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.DctPracticeProfile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("AllowOnlineAppointment")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("AllowTelemedicine")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("AllowWalkInAppointment")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<Guid>("CancelBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("CancelDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("CreateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreateDateTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<int>("DefaultConsultationDurationMinutes")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(15);
-
-                    b.Property<Guid>("DeleteBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeleteDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("DoctorId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("IsCancel")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsDelete")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<int>("MaxPatientPerSession")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasDefaultValue(0);
-
-                    b.Property<string>("PolyclinicName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("PracticeNote")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<Guid>("UpdateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdateDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DoctorId")
-                        .IsUnique();
-
-                    b.ToTable("DctPracticeProfile", "public");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.EmpBankAccount", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AccountHolderName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("AccountNumber")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("BankBranch")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("BankName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("CancelBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("CancelDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("CreateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreateDateTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<Guid>("DeleteBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeleteDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("EmployeeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("IsCancel")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsDelete")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsPrimary")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<Guid>("UpdateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdateDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AccountNumber");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.ToTable("EmpBankAccount", "public");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.EmpDocument", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CancelBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("CancelDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("CreateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreateDateTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<Guid>("DeleteBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeleteDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DocumentName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("DocumentNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("DocumentType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<Guid>("EmployeeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ExpiredDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("FileContentType")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("FilePath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<long?>("FileSizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("IsCancel")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsDelete")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsVerified")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<DateTime?>("IssuedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UpdateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdateDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("VerifiedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("VerifiedDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DocumentNumber");
-
-                    b.HasIndex("DocumentType");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.ToTable("EmpDocument", "public");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.EmpInsuranceProfile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("BpjsEmploymentNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<DateTime?>("BpjsEmploymentRegisteredDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("BpjsHealthNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<DateTime?>("BpjsHealthRegisteredDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("CancelBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("CancelDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("CreateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreateDateTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<Guid>("DeleteBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeleteDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("EmployeeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsBpjsEmploymentActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsBpjsHealthActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsCancel")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsDelete")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<DateTime?>("PrivateInsuranceEndDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("PrivateInsuranceName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("PrivateInsuranceNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime?>("PrivateInsuranceStartDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UpdateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdateDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BpjsEmploymentNumber");
-
-                    b.HasIndex("BpjsHealthNumber");
-
-                    b.HasIndex("EmployeeId")
-                        .IsUnique();
-
-                    b.ToTable("EmpInsuranceProfile", "public");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.EmpPayrollProfile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("BasicSalary")
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<Guid>("CancelBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("CancelDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("CreateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreateDateTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<Guid>("DeleteBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeleteDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("EffectiveEndDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("EffectiveStartDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("EmployeeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("FixedAllowance")
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<decimal>("FixedDeduction")
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<bool>("IsCancel")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsDelete")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsOvertimeEligible")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("IsPayrollActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<decimal>("MealAllowance")
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<decimal>("OtherAllowance")
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<string>("PayrollNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<decimal>("PositionAllowance")
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<string>("SalaryType")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<decimal>("TransportAllowance")
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<Guid>("UpdateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdateDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EmployeeId")
-                        .IsUnique();
-
-                    b.HasIndex("PayrollNumber");
-
-                    b.ToTable("EmpPayrollProfile", "public");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.EmpTaxProfile", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CancelBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("CancelDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("CreateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreateDateTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<Guid>("DeleteBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeleteDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("EmployeeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsCancel")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsDelete")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsPph21Active")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("IsTaxPaidByCompany")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<string>("PtkpStatus")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("TaxNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("TaxRegisteredAddress")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<DateTime?>("TaxRegisteredDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("TaxRegisteredName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<Guid>("UpdateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdateDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EmployeeId")
-                        .IsUnique();
-
-                    b.HasIndex("TaxNumber");
-
-                    b.ToTable("EmpTaxProfile", "public");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.ExtUserContract", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CancelBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("CancelDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ContractEndDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ContractName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("ContractNumber")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime?>("ContractStartDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ContractType")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<decimal>("ContractValue")
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<Guid>("CreateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreateDateTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<Guid>("DeleteBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeleteDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ExternalUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("FilePath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("IsCancel")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsDelete")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<string>("PaymentTerm")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("ScopeOfWork")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<Guid>("UpdateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdateDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ContractNumber");
-
-                    b.HasIndex("ContractType");
-
-                    b.HasIndex("ExternalUserId");
-
-                    b.ToTable("ExtUserContract", "public");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.ExtUserDocument", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CancelBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("CancelDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("CreateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreateDateTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<Guid>("DeleteBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("DeleteDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DocumentName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("DocumentNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("DocumentType")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime?>("ExpiredDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ExternalUserId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("FilePath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("IsCancel")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsDelete")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsVerified")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false);
-
-                    b.Property<DateTime?>("IssuedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UpdateBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdateDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DocumentNumber");
-
-                    b.HasIndex("DocumentType");
-
-                    b.HasIndex("ExternalUserId");
-
-                    b.ToTable("ExtUserDocument", "public");
-                });
-
             modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstDoctor", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1201,12 +293,6 @@ namespace QuilvianSystemBackend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("CancelDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ContractEndDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ContractStartDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreateBy")
@@ -1246,20 +332,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<int?>("Gender")
                         .HasColumnType("integer");
 
-                    b.Property<string>("IdentityNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("IdentityType")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(true);
-
-                    b.Property<bool>("IsAvailableForAppointment")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
@@ -1274,13 +347,6 @@ namespace QuilvianSystemBackend.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(false);
 
-                    b.Property<DateTime?>("JoinDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("MedicalStaffGroup")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<string>("PhoneNumber")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
@@ -1288,11 +354,21 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid?>("PositionId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("SipExpiredDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("SipNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("SpecialistName")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<string>("SubSpecialistName")
+                    b.Property<DateTime?>("StrExpiredDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("StrNumber")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
@@ -1301,10 +377,6 @@ namespace QuilvianSystemBackend.Migrations
 
                     b.Property<DateTime?>("UpdateDateTime")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("WhatsAppNumber")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
 
                     b.HasKey("Id");
 
@@ -1316,10 +388,6 @@ namespace QuilvianSystemBackend.Migrations
                     b.HasIndex("DoctorType");
 
                     b.HasIndex("FullName");
-
-                    b.HasIndex("IdentityNumber");
-
-                    b.HasIndex("IsActive");
 
                     b.HasIndex("PositionId");
 
@@ -1336,10 +404,6 @@ namespace QuilvianSystemBackend.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<string>("AttendanceNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<DateTime?>("BirthDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -1347,7 +411,11 @@ namespace QuilvianSystemBackend.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
-                    b.Property<string>("BloodType")
+                    b.Property<string>("BpjsEmploymentNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("BpjsHealthNumber")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
@@ -1355,16 +423,6 @@ namespace QuilvianSystemBackend.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("CancelDateTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("City")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime?>("ContractEndDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("ContractStartDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreateBy")
@@ -1384,29 +442,9 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("DepartmentId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("District")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<string>("Email")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
-
-                    b.Property<string>("EmergencyContactAddress")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("EmergencyContactName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("EmergencyContactPhone")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
-                    b.Property<string>("EmergencyContactRelation")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
 
                     b.Property<string>("EmployeeCode")
                         .IsRequired()
@@ -1420,10 +458,6 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<int>("EmployeeStatus")
                         .HasColumnType("integer");
 
-                    b.Property<string>("EmploymentType")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -1432,15 +466,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<int?>("Gender")
                         .HasColumnType("integer");
 
-                    b.Property<string>("GradeLevel")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<string>("IdentityNumber")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("IdentityType")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
@@ -1462,14 +488,6 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<DateTime?>("JoinDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("MaritalStatus")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("NickName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<string>("PhoneNumber")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
@@ -1477,27 +495,9 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid>("PositionId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("PostalCode")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<DateTime?>("ProbationEndDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Province")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("Religion")
+                    b.Property<string>("TaxNumber")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
-
-                    b.Property<DateTime?>("ResignDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ResignReason")
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
 
                     b.Property<Guid>("UpdateBy")
                         .HasColumnType("uuid");
@@ -1505,39 +505,16 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<DateTime?>("UpdateDateTime")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Village")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("WhatsAppNumber")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
-                    b.Property<string>("WorkLocation")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("AttendanceNumber");
-
                     b.HasIndex("DepartmentId");
-
-                    b.HasIndex("Email");
 
                     b.HasIndex("EmployeeCode")
                         .IsUnique();
 
-                    b.HasIndex("EmployeeNumber")
-                        .IsUnique();
-
-                    b.HasIndex("EmployeeStatus");
+                    b.HasIndex("EmployeeNumber");
 
                     b.HasIndex("FullName");
-
-                    b.HasIndex("IdentityNumber");
-
-                    b.HasIndex("IsActive");
 
                     b.HasIndex("PositionId");
 
@@ -1554,27 +531,25 @@ namespace QuilvianSystemBackend.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<string>("BusinessLicenseNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<Guid>("CancelBy")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("CancelDateTime")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("CompanyCode")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<string>("CompanyName")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<string>("ContactPersonName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                    b.Property<DateTime?>("ContractEndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ContractNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("ContractStartDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("CreateBy")
                         .HasColumnType("uuid");
@@ -1598,10 +573,6 @@ namespace QuilvianSystemBackend.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
-
-                    b.Property<string>("ExternalStatus")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
 
                     b.Property<int>("ExternalUserType")
                         .HasColumnType("integer");
@@ -1638,27 +609,15 @@ namespace QuilvianSystemBackend.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)");
 
-                    b.Property<string>("TaxNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<Guid>("UpdateBy")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdateDateTime")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("WhatsAppNumber")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("CompanyCode");
-
                     b.HasIndex("CompanyName");
-
-                    b.HasIndex("Email");
 
                     b.HasIndex("ExternalCode")
                         .IsUnique();
@@ -1666,8 +625,6 @@ namespace QuilvianSystemBackend.Migrations
                     b.HasIndex("ExternalUserType");
 
                     b.HasIndex("FullName");
-
-                    b.HasIndex("IsActive");
 
                     b.ToTable("MstExternalUser", "public");
                 });
@@ -1728,9 +685,6 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<DateTime?>("AccessValidUntil")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("BirthDate")
-                        .HasColumnType("date");
-
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("text");
@@ -1767,10 +721,6 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid?>("HospitalId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("IdentityNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -1788,7 +738,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<bool>("MustChangePassword")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(true);
+                        .HasDefaultValue(false);
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -1802,8 +752,7 @@ namespace QuilvianSystemBackend.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("PhoneNumber")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
+                        .HasColumnType("text");
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("boolean");
@@ -1824,11 +773,6 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<DateTime?>("UpdateDateTime")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("UserCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -1846,10 +790,6 @@ namespace QuilvianSystemBackend.Migrations
 
                     b.HasIndex("ExternalUserId");
 
-                    b.HasIndex("IdentityNumber");
-
-                    b.HasIndex("IsActive");
-
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
@@ -1858,9 +798,6 @@ namespace QuilvianSystemBackend.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.HasIndex("PositionId");
-
-                    b.HasIndex("UserCode")
-                        .IsUnique();
 
                     b.HasIndex("UserType");
 
@@ -2359,116 +1296,6 @@ namespace QuilvianSystemBackend.Migrations
                     b.Navigation("Department");
                 });
 
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.DctFeeProfile", b =>
-                {
-                    b.HasOne("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstDoctor", "Doctor")
-                        .WithOne("FeeProfile")
-                        .HasForeignKey("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.DctFeeProfile", "DoctorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Doctor");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.DctLicense", b =>
-                {
-                    b.HasOne("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstDoctor", "Doctor")
-                        .WithMany("Licenses")
-                        .HasForeignKey("DoctorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Doctor");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.DctPracticeProfile", b =>
-                {
-                    b.HasOne("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstDoctor", "Doctor")
-                        .WithOne("PracticeProfile")
-                        .HasForeignKey("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.DctPracticeProfile", "DoctorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Doctor");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.EmpBankAccount", b =>
-                {
-                    b.HasOne("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstEmployee", "Employee")
-                        .WithMany("BankAccounts")
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Employee");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.EmpDocument", b =>
-                {
-                    b.HasOne("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstEmployee", "Employee")
-                        .WithMany("Documents")
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Employee");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.EmpInsuranceProfile", b =>
-                {
-                    b.HasOne("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstEmployee", "Employee")
-                        .WithOne("InsuranceProfile")
-                        .HasForeignKey("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.EmpInsuranceProfile", "EmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Employee");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.EmpPayrollProfile", b =>
-                {
-                    b.HasOne("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstEmployee", "Employee")
-                        .WithOne("PayrollProfile")
-                        .HasForeignKey("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.EmpPayrollProfile", "EmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Employee");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.EmpTaxProfile", b =>
-                {
-                    b.HasOne("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstEmployee", "Employee")
-                        .WithOne("TaxProfile")
-                        .HasForeignKey("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.EmpTaxProfile", "EmployeeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Employee");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.ExtUserContract", b =>
-                {
-                    b.HasOne("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstExternalUser", "ExternalUser")
-                        .WithMany("Contracts")
-                        .HasForeignKey("ExternalUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ExternalUser");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.ExtUserDocument", b =>
-                {
-                    b.HasOne("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstExternalUser", "ExternalUser")
-                        .WithMany("Documents")
-                        .HasForeignKey("ExternalUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("ExternalUser");
-                });
-
             modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstDoctor", b =>
                 {
                     b.HasOne("QuilvianSystemBackend.Areas.Administrator.MasterData.Models.MstDepartment", "Department")
@@ -2603,35 +1430,6 @@ namespace QuilvianSystemBackend.Migrations
             modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.MasterData.Models.MstDepartment", b =>
                 {
                     b.Navigation("Positions");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstDoctor", b =>
-                {
-                    b.Navigation("FeeProfile");
-
-                    b.Navigation("Licenses");
-
-                    b.Navigation("PracticeProfile");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstEmployee", b =>
-                {
-                    b.Navigation("BankAccounts");
-
-                    b.Navigation("Documents");
-
-                    b.Navigation("InsuranceProfile");
-
-                    b.Navigation("PayrollProfile");
-
-                    b.Navigation("TaxProfile");
-                });
-
-            modelBuilder.Entity("QuilvianSystemBackend.Areas.Administrator.UserManagement.Models.MstExternalUser", b =>
-                {
-                    b.Navigation("Contracts");
-
-                    b.Navigation("Documents");
                 });
 
             modelBuilder.Entity("QuilvianSystemBackend.Models.SysApplicationModule", b =>

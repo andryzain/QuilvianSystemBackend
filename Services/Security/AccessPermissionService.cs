@@ -69,7 +69,6 @@ namespace QuilvianSystemBackend.Services.Security
                 .AnyAsync(x =>
                     x.DepartmentId == user.DepartmentId.Value &&
                     x.PositionId == user.PositionId.Value &&
-                    x.UserType == user.UserType &&
                     x.IsAllowed &&
                     x.IsActive &&
                     !x.IsDelete &&

@@ -10,6 +10,7 @@ namespace QuilvianSystemBackend.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
+    [Tags("02-Version")]
     public class VersionController : ControllerBase
     {
         private readonly ApplicationDbContext _dbContext;

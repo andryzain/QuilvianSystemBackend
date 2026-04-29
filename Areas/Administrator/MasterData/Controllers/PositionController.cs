@@ -24,6 +24,7 @@ namespace QuilvianSystemBackend.Areas.Administrator.MasterData.Controllers
         Description = "Master data position",
         SortOrder = 2
     )]
+    [Tags("Master Data / Position")]
     public class PositionController : ControllerBase
     {
         private readonly ApplicationDbContext _dbContext;

@@ -16,6 +16,7 @@ namespace QuilvianSystemBackend.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
+    [Tags("01-Authentication")]
     public class AuthController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;

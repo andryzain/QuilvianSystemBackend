@@ -24,6 +24,7 @@ namespace QuilvianSystemBackend.Areas.Administrator.MasterData.Controllers
         Description = "Master data department",
         SortOrder = 1
     )]
+    [Tags("Master Data / Department")]
     public class DepartmentController : ControllerBase
     {
         private readonly ApplicationDbContext _dbContext;

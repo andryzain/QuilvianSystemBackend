@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QuilvianSystemBackend.Repositories;
@@ -11,9 +12,10 @@ using QuilvianSystemBackend.Repositories;
 namespace QuilvianSystemBackend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260429051007_initializeChildEmployeeDocterExternalUser")]
+    partial class initializeChildEmployeeDocterExternalUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1528,8 +1530,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.HasIndex("EmployeeCode")
                         .IsUnique();
 
-                    b.HasIndex("EmployeeNumber")
-                        .IsUnique();
+                    b.HasIndex("EmployeeNumber");
 
                     b.HasIndex("EmployeeStatus");
 
@@ -1728,9 +1729,6 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<DateTime?>("AccessValidUntil")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime?>("BirthDate")
-                        .HasColumnType("date");
-
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
                         .HasColumnType("text");
@@ -1767,10 +1765,6 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<Guid?>("HospitalId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("IdentityNumber")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
@@ -1788,7 +1782,7 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<bool>("MustChangePassword")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasDefaultValue(true);
+                        .HasDefaultValue(false);
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -1802,8 +1796,7 @@ namespace QuilvianSystemBackend.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("PhoneNumber")
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
+                        .HasColumnType("text");
 
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("boolean");
@@ -1824,11 +1817,6 @@ namespace QuilvianSystemBackend.Migrations
                     b.Property<DateTime?>("UpdateDateTime")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("UserCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
@@ -1846,10 +1834,6 @@ namespace QuilvianSystemBackend.Migrations
 
                     b.HasIndex("ExternalUserId");
 
-                    b.HasIndex("IdentityNumber");
-
-                    b.HasIndex("IsActive");
-
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
@@ -1858,9 +1842,6 @@ namespace QuilvianSystemBackend.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.HasIndex("PositionId");
-
-                    b.HasIndex("UserCode")
-                        .IsUnique();
 
                     b.HasIndex("UserType");
 

@@ -9,6 +9,9 @@ namespace QuilvianSystemBackend.Seeders
         private const string SuperAdminRoleName = "SuperAdmin";
         private const string UserRoleName = "User";
 
+        private const string SuperAdminUserCode = "USR-RSMMC-00000";
+        private const string DefaultProfilePhotoFileName = "user.jpeg";
+
         public static async Task SeedAsync(IServiceProvider serviceProvider)
         {
             using var scope = serviceProvider.CreateScope();
@@ -24,7 +27,6 @@ namespace QuilvianSystemBackend.Seeders
                 return;
             }
 
-            // 1. Pastikan role global tersedia
             await EnsureRoleAsync(
                 roleManager,
                 SuperAdminRoleName,
@@ -39,7 +41,6 @@ namespace QuilvianSystemBackend.Seeders
                 true
             );
 
-            // 2. Ambil config superadmin
             var username = configuration["SeedSuperAdmin:Username"];
             var email = configuration["SeedSuperAdmin:Email"];
             var password = configuration["SeedSuperAdmin:Password"];
@@ -54,7 +55,11 @@ namespace QuilvianSystemBackend.Seeders
                 throw new InvalidOperationException("Konfigurasi SeedSuperAdmin belum lengkap di appsettings.json.");
             }
 
-            // 3. Cek apakah user superadmin sudah ada
+            username = username.Trim();
+            email = email.Trim().ToLowerInvariant();
+
+            var defaultPhotoPath = BuildDefaultProfilePhotoUrl(configuration);
+
             var existingUser = await userManager.FindByNameAsync(username);
 
             if (existingUser == null)
@@ -62,22 +67,42 @@ namespace QuilvianSystemBackend.Seeders
                 existingUser = await userManager.FindByEmailAsync(email);
             }
 
-            // 4. Jika belum ada, buat user superadmin
             if (existingUser == null)
             {
                 var user = new ApplicationUser
                 {
+                    Id = Guid.NewGuid(),
+
+                    UserCode = SuperAdminUserCode,
+
                     UserName = username,
-                    NormalizedUserName = username.ToUpper(),
+                    NormalizedUserName = username.ToUpperInvariant(),
+
                     Email = email,
-                    NormalizedEmail = email.ToUpper(),
+                    NormalizedEmail = email.ToUpperInvariant(),
                     EmailConfirmed = true,
+
                     FullName = string.IsNullOrWhiteSpace(fullName)
                         ? "Super Administrator"
-                        : fullName,
+                        : fullName.Trim(),
+
                     UserType = UserType.SuperAdmin,
+
+                    BirthDate = null,
+                    IdentityNumber = null,
+
+                    DepartmentId = null,
+                    PositionId = null,
+                    EmployeeId = null,
+                    DoctorId = null,
+                    ExternalUserId = null,
+
                     IsActive = true,
                     MustChangePassword = false,
+                    AccessValidUntil = null,
+
+                    ProfilePhotoPath = defaultPhotoPath,
+
                     CreateDateTime = DateTime.UtcNow
                 };
 
@@ -100,7 +125,68 @@ namespace QuilvianSystemBackend.Seeders
                 return;
             }
 
-            // 5. Jika user sudah ada, pastikan tetap punya role SuperAdmin
+            var needUpdate = false;
+
+            if (string.IsNullOrWhiteSpace(existingUser.UserCode))
+            {
+                existingUser.UserCode = SuperAdminUserCode;
+                needUpdate = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(existingUser.FullName))
+            {
+                existingUser.FullName = string.IsNullOrWhiteSpace(fullName)
+                    ? "Super Administrator"
+                    : fullName.Trim();
+
+                needUpdate = true;
+            }
+
+            if (existingUser.UserType != UserType.SuperAdmin)
+            {
+                existingUser.UserType = UserType.SuperAdmin;
+                needUpdate = true;
+            }
+
+            if (!existingUser.IsActive)
+            {
+                existingUser.IsActive = true;
+                needUpdate = true;
+            }
+
+            if (existingUser.MustChangePassword)
+            {
+                existingUser.MustChangePassword = false;
+                needUpdate = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(existingUser.ProfilePhotoPath))
+            {
+                existingUser.ProfilePhotoPath = defaultPhotoPath;
+                needUpdate = true;
+            }
+
+            if (!string.Equals(existingUser.Email, email, StringComparison.OrdinalIgnoreCase))
+            {
+                existingUser.Email = email;
+                existingUser.NormalizedEmail = email.ToUpperInvariant();
+                existingUser.EmailConfirmed = true;
+                needUpdate = true;
+            }
+
+            existingUser.UpdateDateTime = DateTime.UtcNow;
+
+            if (needUpdate)
+            {
+                var updateResult = await userManager.UpdateAsync(existingUser);
+
+                if (!updateResult.Succeeded)
+                {
+                    var errors = string.Join(", ", updateResult.Errors.Select(x => x.Description));
+                    throw new InvalidOperationException($"Gagal update user SuperAdmin: {errors}");
+                }
+            }
+
             var isInSuperAdminRole = await userManager.IsInRoleAsync(existingUser, SuperAdminRoleName);
 
             if (!isInSuperAdminRole)
@@ -131,7 +217,7 @@ namespace QuilvianSystemBackend.Seeders
             var role = new ApplicationRole
             {
                 Name = roleName,
-                NormalizedName = roleName.ToUpper(),
+                NormalizedName = roleName.ToUpperInvariant(),
                 Description = description,
                 IsSystemRole = isSystemRole,
                 CreateDateTime = DateTime.UtcNow
@@ -144,6 +230,28 @@ namespace QuilvianSystemBackend.Seeders
                 var errors = string.Join(", ", createRoleResult.Errors.Select(x => x.Description));
                 throw new InvalidOperationException($"Gagal membuat role {roleName}: {errors}");
             }
+        }
+
+        private static string BuildDefaultProfilePhotoUrl(IConfiguration configuration)
+        {
+            var uploadUrl = configuration["FileStorage:UploadUrl"]?.TrimEnd('/');
+            var folder = configuration["FileStorage:ProfilePhotoFolder"]?.Trim('/');
+
+            if (string.IsNullOrWhiteSpace(uploadUrl))
+            {
+                return string.Empty;
+            }
+
+            if (string.IsNullOrWhiteSpace(folder))
+            {
+                folder = "default-photo";
+            }
+
+            var baseUrl = uploadUrl.EndsWith("/uploads", StringComparison.OrdinalIgnoreCase)
+                ? uploadUrl[..^"/uploads".Length]
+                : uploadUrl;
+
+            return $"{baseUrl}/uploads/{folder}/{DefaultProfilePhotoFileName}";
         }
     }
 }
