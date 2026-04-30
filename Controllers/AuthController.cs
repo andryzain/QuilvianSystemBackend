@@ -1,10 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using QuilvianSystemBackend.Areas.Corporate.EmployeeManagement.Attendance.Models;
 using QuilvianSystemBackend.Constants;
 using QuilvianSystemBackend.DTOs.Auth;
+using QuilvianSystemBackend.Enum;
 using QuilvianSystemBackend.Models;
+using QuilvianSystemBackend.Repositories;
 using QuilvianSystemBackend.Responses;
 using QuilvianSystemBackend.Services.Language;
 using QuilvianSystemBackend.Services.Logging;
@@ -21,6 +25,7 @@ namespace QuilvianSystemBackend.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly ApplicationDbContext _dbContext;
         private readonly IConfiguration _configuration;
         private readonly IWebHostEnvironment _environment;
         private readonly LanguageService _languageService;
@@ -29,6 +34,7 @@ namespace QuilvianSystemBackend.Controllers
         public AuthController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
+            ApplicationDbContext dbContext,
             IConfiguration configuration,
             IWebHostEnvironment environment,
             LanguageService languageService,
@@ -36,6 +42,7 @@ namespace QuilvianSystemBackend.Controllers
         {
             _userManager = userManager;
             _signInManager = signInManager;
+            _dbContext = dbContext;
             _configuration = configuration;
             _environment = environment;
             _languageService = languageService;
@@ -48,6 +55,7 @@ namespace QuilvianSystemBackend.Controllers
         [ProducesResponseType(typeof(ApiResponse<LoginDataResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             if (string.IsNullOrWhiteSpace(request.Email))
@@ -191,6 +199,42 @@ namespace QuilvianSystemBackend.Controllers
                 ));
             }
 
+            var geofenceValidation = ValidateLoginGeofence(user, request);
+
+            if (!geofenceValidation.IsValid)
+            {
+                await _loggerService.WarningAsync(
+                    "Auth",
+                    "Login",
+                    "Login gagal. Lokasi di luar area yang diizinkan.",
+                    new
+                    {
+                        UserId = user.Id,
+                        Username = user.UserName,
+                        Email = user.Email,
+                        request.Latitude,
+                        request.Longitude,
+                        request.AccuracyMeters,
+                        geofenceValidation.DistanceMeters,
+                        geofenceValidation.Message
+                    }
+                );
+
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    ApiResponse<object>.Fail(
+                        StatusCodes.Status403Forbidden,
+                        geofenceValidation.Message
+                    )
+                );
+            }
+
+            var attendanceResult = await RecordAttendanceOnLoginAsync(
+                user,
+                request,
+                geofenceValidation.DistanceMeters
+            );
+
             user.LastLoginAt = DateTime.UtcNow;
             await _userManager.UpdateAsync(user);
 
@@ -207,7 +251,14 @@ namespace QuilvianSystemBackend.Controllers
                 {
                     UserId = user.Id,
                     Username = user.UserName,
-                    Email = user.Email
+                    Email = user.Email,
+                    request.Latitude,
+                    request.Longitude,
+                    request.AccuracyMeters,
+                    geofenceValidation.DistanceMeters,
+                    AttendanceRecorded = attendanceResult.IsRecorded,
+                    AttendanceAlreadyExists = attendanceResult.IsAlreadyExists,
+                    AttendanceMessage = attendanceResult.Message
                 }
             );
 
@@ -466,6 +517,429 @@ namespace QuilvianSystemBackend.Controllers
                 null,
                 _languageService.GetMessage(MessageKeys.AuthLogoutSuccess)
             ));
+        }
+
+        [HttpPost("attendance/check-out")]
+        [Authorize]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> AttendanceCheckOut([FromBody] AttendanceCheckoutRequest request)
+        {
+            var userIdText = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (!Guid.TryParse(userIdText, out var userId))
+            {
+                return Unauthorized(ApiResponse<object>.Fail(
+                    StatusCodes.Status401Unauthorized,
+                    "Token tidak valid."
+                ));
+            }
+
+            var user = await _userManager.FindByIdAsync(userId.ToString());
+
+            if (user == null)
+            {
+                return Unauthorized(ApiResponse<object>.Fail(
+                    StatusCodes.Status401Unauthorized,
+                    "User tidak ditemukan."
+                ));
+            }
+
+            if (!user.IsActive)
+            {
+                return Unauthorized(ApiResponse<object>.Fail(
+                    StatusCodes.Status401Unauthorized,
+                    "Akun tidak aktif."
+                ));
+            }
+
+            if (!IsAttendanceUser(user))
+            {
+                return BadRequest(ApiResponse<object>.Fail(
+                    StatusCodes.Status400BadRequest,
+                    "User ini tidak termasuk employee atau doctor, sehingga tidak perlu absen pulang."
+                ));
+            }
+
+            var geofenceValidation = ValidateGeofence(
+                user,
+                request.Latitude,
+                request.Longitude,
+                request.AccuracyMeters
+            );
+
+            if (!geofenceValidation.IsValid)
+            {
+                await _loggerService.WarningAsync(
+                    "Auth",
+                    "Attendance.CheckOut",
+                    "Absen pulang gagal. Lokasi di luar area yang diizinkan.",
+                    new
+                    {
+                        user.Id,
+                        user.Email,
+                        user.UserName,
+                        request.Latitude,
+                        request.Longitude,
+                        request.AccuracyMeters,
+                        geofenceValidation.DistanceMeters,
+                        geofenceValidation.Message
+                    }
+                );
+
+                return StatusCode(
+                    StatusCodes.Status403Forbidden,
+                    ApiResponse<object>.Fail(
+                        StatusCodes.Status403Forbidden,
+                        geofenceValidation.Message
+                    )
+                );
+            }
+
+            var nowJakarta = GetSystemNow();
+            var attendanceDate = DateOnly.FromDateTime(nowJakarta);
+
+            var attendance = await _dbContext.EmpAttendances
+                .FirstOrDefaultAsync(x =>
+                    x.UserId == user.Id &&
+                    x.AttendanceDate == attendanceDate &&
+                    !x.IsDelete);
+
+            if (attendance == null)
+            {
+                return BadRequest(ApiResponse<object>.Fail(
+                    StatusCodes.Status400BadRequest,
+                    "Absensi masuk hari ini belum tercatat."
+                ));
+            }
+
+            if (attendance.CheckOutAt.HasValue)
+            {
+                return BadRequest(ApiResponse<object>.Fail(
+                    StatusCodes.Status400BadRequest,
+                    "Absensi pulang hari ini sudah tercatat."
+                ));
+            }
+
+            var checkOutAtUtc = DateTime.UtcNow;
+
+            attendance.CheckOutAt = checkOutAtUtc;
+            attendance.CheckOutLatitude = request.Latitude;
+            attendance.CheckOutLongitude = request.Longitude;
+            attendance.CheckOutAccuracyMeters = request.AccuracyMeters;
+            attendance.CheckOutDistanceMeters = geofenceValidation.DistanceMeters ?? 0;
+            attendance.CheckOutSource = "ManualCheckOut";
+            attendance.CheckOutIpAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+            attendance.CheckOutUserAgent = Request.Headers.UserAgent.ToString();
+            attendance.Status = "CheckedOut";
+            attendance.WorkDurationMinutes = (int)Math.Max(
+                0,
+                (checkOutAtUtc - attendance.CheckInAt).TotalMinutes
+            );
+            attendance.UpdateDateTime = DateTime.UtcNow;
+            attendance.UpdateBy = user.Id;
+
+            await _dbContext.SaveChangesAsync();
+
+            await _loggerService.InfoAsync(
+                "Auth",
+                "Attendance.CheckOut",
+                "Absensi pulang berhasil dicatat.",
+                new
+                {
+                    AttendanceId = attendance.Id,
+                    attendance.UserId,
+                    attendance.EmployeeId,
+                    attendance.DoctorId,
+                    attendance.AttendanceDate,
+                    attendance.CheckInAt,
+                    attendance.CheckOutAt,
+                    attendance.WorkDurationMinutes,
+                    attendance.CheckOutDistanceMeters
+                }
+            );
+
+            return Ok(ApiResponse<object>.Ok(
+                new
+                {
+                    attendance.Id,
+                    attendance.AttendanceDate,
+                    attendance.CheckInAt,
+                    attendance.CheckOutAt,
+                    attendance.WorkDurationMinutes,
+                    attendance.Status
+                },
+                "Absensi pulang berhasil dicatat."
+            ));
+        }
+
+        private async Task<LoginAttendanceResult> RecordAttendanceOnLoginAsync(
+    ApplicationUser user,
+    LoginRequest request,
+    double? distanceMeters)
+        {
+            if (!IsAttendanceUser(user))
+            {
+                return LoginAttendanceResult.Skipped("User bukan employee atau doctor.");
+            }
+
+            if (!request.Latitude.HasValue || !request.Longitude.HasValue)
+            {
+                return LoginAttendanceResult.Skipped("Lokasi tidak tersedia.");
+            }
+
+            Guid? employeeId = null;
+            Guid? doctorId = null;
+
+            if (user.UserType == UserType.Employee)
+            {
+                employeeId = user.EmployeeId;
+            }
+
+            if (user.UserType == UserType.PermanentDoctor ||
+                user.UserType == UserType.GuestDoctor)
+            {
+                doctorId = user.DoctorId;
+            }
+
+            if (!employeeId.HasValue && !doctorId.HasValue)
+            {
+                return LoginAttendanceResult.Skipped("Profile employee/doctor belum terhubung.");
+            }
+
+            var nowJakarta = GetSystemNow();
+            var attendanceDate = DateOnly.FromDateTime(nowJakarta);
+
+            var alreadyExists = await _dbContext.EmpAttendances
+                .AnyAsync(x =>
+                    x.UserId == user.Id &&
+                    x.AttendanceDate == attendanceDate &&
+                    !x.IsDelete);
+
+            if (alreadyExists)
+            {
+                return LoginAttendanceResult.AlreadyExists("Absensi masuk hari ini sudah tercatat.");
+            }
+
+            var attendance = new EmpAttendance
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                EmployeeId = employeeId,
+                DoctorId = doctorId,
+                AttendanceDate = attendanceDate,
+                CheckInAt = DateTime.UtcNow,
+                CheckInLatitude = request.Latitude.Value,
+                CheckInLongitude = request.Longitude.Value,
+                CheckInAccuracyMeters = request.AccuracyMeters,
+                CheckInDistanceMeters = distanceMeters ?? 0,
+                PersonType = user.UserType.ToString(),
+                CheckInSource = "Login",
+                Status = "CheckedIn",
+                CheckInIpAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                CheckInUserAgent = Request.Headers.UserAgent.ToString(),
+                CreateDateTime = DateTime.UtcNow,
+                CreateBy = user.Id,
+                IsDelete = false,
+                IsCancel = false
+            };
+
+            _dbContext.EmpAttendances.Add(attendance);
+
+            await _dbContext.SaveChangesAsync();
+
+            return LoginAttendanceResult.Recorded("Absensi masuk berhasil dicatat.");
+        }
+
+        private static bool IsAttendanceUser(ApplicationUser user)
+        {
+            return user.UserType == UserType.Employee ||
+                   user.UserType == UserType.PermanentDoctor ||
+                   user.UserType == UserType.GuestDoctor;
+        }
+
+        private static DateTime GetSystemNow()
+        {
+            try
+            {
+                var timezone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Jakarta");
+                return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timezone);
+            }
+            catch
+            {
+                return DateTime.UtcNow.AddHours(7);
+            }
+        }
+
+        private class LoginAttendanceResult
+        {
+            public bool IsRecorded { get; set; }
+
+            public bool IsAlreadyExists { get; set; }
+
+            public string Message { get; set; } = string.Empty;
+
+            public static LoginAttendanceResult Recorded(string message)
+            {
+                return new LoginAttendanceResult
+                {
+                    IsRecorded = true,
+                    IsAlreadyExists = false,
+                    Message = message
+                };
+            }
+
+            public static LoginAttendanceResult AlreadyExists(string message)
+            {
+                return new LoginAttendanceResult
+                {
+                    IsRecorded = false,
+                    IsAlreadyExists = true,
+                    Message = message
+                };
+            }
+
+            public static LoginAttendanceResult Skipped(string message)
+            {
+                return new LoginAttendanceResult
+                {
+                    IsRecorded = false,
+                    IsAlreadyExists = false,
+                    Message = message
+                };
+            }
+        }
+
+        private (bool IsValid, string Message, double? DistanceMeters) ValidateLoginGeofence(ApplicationUser user, LoginRequest request)
+        {
+            return ValidateGeofence(
+                user,
+                request.Latitude,
+                request.Longitude,
+                request.AccuracyMeters
+            );
+        }
+
+        private (bool IsValid, string Message, double? DistanceMeters) ValidateGeofence(
+            ApplicationUser user,
+            double? latitude,
+            double? longitude,
+            double? accuracyMeters)
+        {
+            var geofenceEnabled = _configuration.GetValue<bool>("LoginGeofence:Enabled");
+
+            if (!geofenceEnabled)
+            {
+                return (true, string.Empty, null);
+            }
+
+            var applyToSuperAdmin = _configuration.GetValue<bool>("LoginGeofence:ApplyToSuperAdmin");
+
+            if (user.UserType == UserType.SuperAdmin && !applyToSuperAdmin)
+            {
+                return (true, string.Empty, null);
+            }
+
+            if (!latitude.HasValue || !longitude.HasValue)
+            {
+                return (false, "Lokasi wajib diaktifkan.", null);
+            }
+
+            if (latitude.Value < -90 || latitude.Value > 90)
+            {
+                return (false, "Latitude tidak valid.", null);
+            }
+
+            if (longitude.Value < -180 || longitude.Value > 180)
+            {
+                return (false, "Longitude tidak valid.", null);
+            }
+
+            var hospitalLatitude = _configuration.GetValue<double?>("LoginGeofence:Latitude");
+            var hospitalLongitude = _configuration.GetValue<double?>("LoginGeofence:Longitude");
+            var allowedRadiusMeters = _configuration.GetValue<double>("LoginGeofence:AllowedRadiusMeters");
+            var maxAccuracyMeters = _configuration.GetValue<double>("LoginGeofence:MaxAccuracyMeters");
+
+            if (!hospitalLatitude.HasValue || !hospitalLongitude.HasValue)
+            {
+                return (false, "Koordinat rumah sakit belum dikonfigurasi.", null);
+            }
+
+            if (allowedRadiusMeters <= 0)
+            {
+                allowedRadiusMeters = 1000;
+            }
+
+            if (maxAccuracyMeters > 0)
+            {
+                if (!accuracyMeters.HasValue)
+                {
+                    return (
+                        false,
+                        "Akurasi lokasi tidak terbaca. Silakan aktifkan GPS/lokasi dengan akurasi tinggi.",
+                        null
+                    );
+                }
+
+                if (accuracyMeters.Value > maxAccuracyMeters)
+                {
+                    return (
+                        false,
+                        $"Akurasi lokasi terlalu rendah. Akurasi saat ini {accuracyMeters.Value:0} meter, maksimal {maxAccuracyMeters:0} meter.",
+                        null
+                    );
+                }
+            }
+
+            var distanceMeters = CalculateDistanceMeters(
+                hospitalLatitude.Value,
+                hospitalLongitude.Value,
+                latitude.Value,
+                longitude.Value
+            );
+
+            if (distanceMeters > allowedRadiusMeters)
+            {
+                return (
+                    false,
+                    $"Lokasi Anda berada {distanceMeters:0} meter dari rumah sakit. Maksimal jarak yang diizinkan {allowedRadiusMeters:0} meter.",
+                    distanceMeters
+                );
+            }
+
+            return (true, string.Empty, distanceMeters);
+        }
+
+        private static double CalculateDistanceMeters(
+            double latitude1,
+            double longitude1,
+            double latitude2,
+            double longitude2)
+        {
+            const double earthRadiusMeters = 6371000;
+
+            var dLat = ToRadians(latitude2 - latitude1);
+            var dLon = ToRadians(longitude2 - longitude1);
+
+            var lat1 = ToRadians(latitude1);
+            var lat2 = ToRadians(latitude2);
+
+            var a =
+                Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(lat1) * Math.Cos(lat2) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
+            var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+
+            return earthRadiusMeters * c;
+        }
+
+        private static double ToRadians(double degrees)
+        {
+            return degrees * Math.PI / 180;
         }
 
         private string GenerateJwtToken(ApplicationUser user, IList<string> roles)

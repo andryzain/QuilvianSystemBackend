@@ -24,6 +24,7 @@ namespace QuilvianSystemBackend.Seeders
 
             if (!seedEnabled)
             {
+                Console.WriteLine("[Seeder] SeedSuperAdmin disabled.");
                 return;
             }
 
@@ -60,6 +61,8 @@ namespace QuilvianSystemBackend.Seeders
 
             var defaultPhotoPath = BuildDefaultProfilePhotoUrl(configuration);
 
+            Console.WriteLine($"[Seeder] Checking SuperAdmin username={username}, email={email}");
+
             var existingUser = await userManager.FindByNameAsync(username);
 
             if (existingUser == null)
@@ -69,6 +72,8 @@ namespace QuilvianSystemBackend.Seeders
 
             if (existingUser == null)
             {
+                Console.WriteLine("[Seeder] SuperAdmin not found. Creating new SuperAdmin...");
+
                 var user = new ApplicationUser
                 {
                     Id = Guid.NewGuid(),
@@ -91,6 +96,7 @@ namespace QuilvianSystemBackend.Seeders
                     BirthDate = null,
                     IdentityNumber = null,
 
+                    HospitalId = null,
                     DepartmentId = null,
                     PositionId = null,
                     EmployeeId = null,
@@ -122,8 +128,11 @@ namespace QuilvianSystemBackend.Seeders
                     throw new InvalidOperationException($"Gagal menambahkan role SuperAdmin ke user: {errors}");
                 }
 
+                Console.WriteLine("[Seeder] SuperAdmin created successfully.");
                 return;
             }
+
+            Console.WriteLine("[Seeder] SuperAdmin already exists. Checking data...");
 
             var needUpdate = false;
 
@@ -160,7 +169,8 @@ namespace QuilvianSystemBackend.Seeders
                 needUpdate = true;
             }
 
-            if (string.IsNullOrWhiteSpace(existingUser.ProfilePhotoPath))
+            if (string.IsNullOrWhiteSpace(existingUser.ProfilePhotoPath) ||
+                existingUser.ProfilePhotoPath.Contains("/uploads/uploads/", StringComparison.OrdinalIgnoreCase))
             {
                 existingUser.ProfilePhotoPath = defaultPhotoPath;
                 needUpdate = true;
@@ -174,10 +184,17 @@ namespace QuilvianSystemBackend.Seeders
                 needUpdate = true;
             }
 
-            existingUser.UpdateDateTime = DateTime.UtcNow;
+            if (!string.Equals(existingUser.UserName, username, StringComparison.OrdinalIgnoreCase))
+            {
+                existingUser.UserName = username;
+                existingUser.NormalizedUserName = username.ToUpperInvariant();
+                needUpdate = true;
+            }
 
             if (needUpdate)
             {
+                existingUser.UpdateDateTime = DateTime.UtcNow;
+
                 var updateResult = await userManager.UpdateAsync(existingUser);
 
                 if (!updateResult.Succeeded)
@@ -185,6 +202,8 @@ namespace QuilvianSystemBackend.Seeders
                     var errors = string.Join(", ", updateResult.Errors.Select(x => x.Description));
                     throw new InvalidOperationException($"Gagal update user SuperAdmin: {errors}");
                 }
+
+                Console.WriteLine("[Seeder] SuperAdmin updated successfully.");
             }
 
             var isInSuperAdminRole = await userManager.IsInRoleAsync(existingUser, SuperAdminRoleName);
@@ -198,6 +217,8 @@ namespace QuilvianSystemBackend.Seeders
                     var errors = string.Join(", ", addRoleResult.Errors.Select(x => x.Description));
                     throw new InvalidOperationException($"Gagal menambahkan role SuperAdmin ke existing user: {errors}");
                 }
+
+                Console.WriteLine("[Seeder] SuperAdmin role assigned successfully.");
             }
         }
 
@@ -216,6 +237,7 @@ namespace QuilvianSystemBackend.Seeders
 
             var role = new ApplicationRole
             {
+                Id = Guid.NewGuid(),
                 Name = roleName,
                 NormalizedName = roleName.ToUpperInvariant(),
                 Description = description,
@@ -234,8 +256,8 @@ namespace QuilvianSystemBackend.Seeders
 
         private static string BuildDefaultProfilePhotoUrl(IConfiguration configuration)
         {
-            var uploadUrl = configuration["FileStorage:UploadUrl"]?.TrimEnd('/');
-            var folder = configuration["FileStorage:ProfilePhotoFolder"]?.Trim('/');
+            var uploadUrl = configuration["FileStorage:UploadUrl"]?.Trim();
+            var folder = configuration["FileStorage:ProfilePhotoFolder"]?.Trim();
 
             if (string.IsNullOrWhiteSpace(uploadUrl))
             {
@@ -247,9 +269,30 @@ namespace QuilvianSystemBackend.Seeders
                 folder = "default-photo";
             }
 
-            var baseUrl = uploadUrl.EndsWith("/uploads", StringComparison.OrdinalIgnoreCase)
-                ? uploadUrl[..^"/uploads".Length]
-                : uploadUrl;
+            uploadUrl = uploadUrl.TrimEnd('/');
+            folder = folder.Trim('/');
+
+            if (folder.StartsWith("uploads/", StringComparison.OrdinalIgnoreCase))
+            {
+                folder = folder["uploads/".Length..];
+            }
+
+            if (folder.StartsWith("upload/", StringComparison.OrdinalIgnoreCase))
+            {
+                folder = folder["upload/".Length..];
+            }
+
+            var baseUrl = uploadUrl;
+
+            if (baseUrl.EndsWith("/upload", StringComparison.OrdinalIgnoreCase))
+            {
+                baseUrl = baseUrl[..^"/upload".Length];
+            }
+
+            if (baseUrl.EndsWith("/uploads", StringComparison.OrdinalIgnoreCase))
+            {
+                baseUrl = baseUrl[..^"/uploads".Length];
+            }
 
             return $"{baseUrl}/uploads/{folder}/{DefaultProfilePhotoFileName}";
         }

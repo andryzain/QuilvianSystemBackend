@@ -3,15 +3,19 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuilvianSystemBackend.Areas.Administrator.UserManagement.DTOs;
-using QuilvianSystemBackend.Areas.Administrator.UserManagement.Enum;
 using QuilvianSystemBackend.Areas.Administrator.UserManagement.Models;
 using QuilvianSystemBackend.Attributes;
-using QuilvianSystemBackend.Enum;
 using QuilvianSystemBackend.Models;
 using QuilvianSystemBackend.Repositories;
 using QuilvianSystemBackend.Responses;
 using QuilvianSystemBackend.Services.Logging;
 using System.Security.Claims;
+
+using UserTypeEnum = QuilvianSystemBackend.Enum.UserType;
+using DoctorTypeEnum = QuilvianSystemBackend.Areas.Administrator.UserManagement.Enum.DoctorType;
+using EmployeeStatusEnum = QuilvianSystemBackend.Areas.Administrator.UserManagement.Enum.EmployeeStatus;
+using ExternalUserTypeEnum = QuilvianSystemBackend.Areas.Administrator.UserManagement.Enum.ExternalUserType;
+using GenderEnum = QuilvianSystemBackend.Areas.Administrator.UserManagement.Enum.Gender;
 
 namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
 {
@@ -54,6 +58,204 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
             _configuration = configuration;
         }
 
+        [HttpGet]
+        [ProducesResponseType(typeof(ApiResponse<PagedResult<UserManagementResponse>>), StatusCodes.Status200OK)]
+        [AccessAction(
+            actionName: "Index",
+            displayName: "Lihat Data",
+            Description = "Melihat daftar user",
+            SortOrder = 1
+        )]
+        [AccessPermission("UserManagement", "Index")]
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? search,
+            [FromQuery] UserTypeEnum? userType,
+            [FromQuery] Guid? departmentId,
+            [FromQuery] Guid? positionId,
+            [FromQuery] bool? isActive,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            pageNumber = pageNumber <= 0 ? 1 : pageNumber;
+            pageSize = pageSize <= 0 ? 10 : pageSize;
+            pageSize = pageSize > 100 ? 100 : pageSize;
+
+            var query = _dbContext.Users
+                .AsNoTracking()
+                .Include(x => x.Department)
+                .Include(x => x.Position)
+                .Include(x => x.Employee)
+                .Include(x => x.Doctor)
+                .Include(x => x.ExternalUser)
+                .Where(x => x.UserType != UserTypeEnum.SuperAdmin);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var keyword = search.Trim().ToLower();
+
+                query = query.Where(x =>
+                    x.UserCode.ToLower().Contains(keyword) ||
+                    (x.UserName != null && x.UserName.ToLower().Contains(keyword)) ||
+                    (x.Email != null && x.Email.ToLower().Contains(keyword)) ||
+                    x.FullName.ToLower().Contains(keyword) ||
+                    (x.IdentityNumber != null && x.IdentityNumber.ToLower().Contains(keyword)) ||
+                    (x.PhoneNumber != null && x.PhoneNumber.ToLower().Contains(keyword)) ||
+                    (x.Department != null && x.Department.DepartmentName.ToLower().Contains(keyword)) ||
+                    (x.Position != null && x.Position.PositionName.ToLower().Contains(keyword)) ||
+                    (x.Employee != null && x.Employee.FullName.ToLower().Contains(keyword)) ||
+                    (x.Doctor != null && x.Doctor.FullName.ToLower().Contains(keyword)) ||
+                    (x.ExternalUser != null && x.ExternalUser.FullName.ToLower().Contains(keyword)));
+            }
+
+            if (userType.HasValue)
+            {
+                query = query.Where(x => x.UserType == userType.Value);
+            }
+
+            if (departmentId.HasValue)
+            {
+                query = query.Where(x => x.DepartmentId == departmentId.Value);
+            }
+
+            if (positionId.HasValue)
+            {
+                query = query.Where(x => x.PositionId == positionId.Value);
+            }
+
+            if (isActive.HasValue)
+            {
+                query = query.Where(x => x.IsActive == isActive.Value);
+            }
+
+            var totalData = await query.CountAsync();
+
+            var users = await query
+                .OrderBy(x => x.FullName)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var items = new List<UserManagementResponse>();
+
+            foreach (var user in users)
+            {
+                items.Add(await BuildUserResponseAsync(user));
+            }
+
+            var result = new PagedResult<UserManagementResponse>
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalData = totalData,
+                TotalPage = (int)Math.Ceiling(totalData / (double)pageSize),
+                Items = items
+            };
+
+            return Ok(ApiResponse<PagedResult<UserManagementResponse>>.Ok(
+                result,
+                "Daftar user berhasil diambil."
+            ));
+        }
+
+        [HttpGet("create-options")]
+        [ProducesResponseType(typeof(ApiResponse<CreateUserOptionsResponse>), StatusCodes.Status200OK)]
+        [AccessAction(
+            actionName: "CreateOptions",
+            displayName: "Pilihan Form Tambah User",
+            Description = "Mengambil pilihan enum dan aturan form pembuatan user",
+            SortOrder = 2
+        )]
+        [AccessPermission("UserManagement", "Create")]
+        public IActionResult GetCreateOptions()
+        {
+            var response = new CreateUserOptionsResponse
+            {
+                UsernameSource = "Email",
+                PasswordRule = "Password otomatis dari tanggal lahir format ddMMMyyyy Indonesia, contoh 18Des1990.",
+                DefaultProfilePhotoPath = BuildDefaultProfilePhotoUrl(),
+
+                UserTypes = new List<EnumOptionResponse>
+                {
+                    ToEnumOption(UserTypeEnum.Employee, "Employee / Karyawan"),
+                    ToEnumOption(UserTypeEnum.PermanentDoctor, "Dokter Tetap"),
+                    ToEnumOption(UserTypeEnum.GuestDoctor, "Dokter Tamu"),
+                    ToEnumOption(UserTypeEnum.ExternalUser, "User Eksternal"),
+                    ToEnumOption(UserTypeEnum.Vendor, "Vendor")
+                },
+
+                Genders = BuildEnumOptions<GenderEnum>(),
+
+                RequiredFields = new List<string>
+                {
+                    "fullName",
+                    "userType",
+                    "birthDate",
+                    "identityNumber",
+                    "email",
+                    "phoneNumber",
+                    "departmentId",
+                    "positionId"
+                },
+
+                OptionalFields = new List<string>
+                {
+                    "gender",
+                    "accessValidUntil",
+                    "address"
+                },
+
+                AutoGeneratedFields = new List<string>
+                {
+                    "userCode",
+                    "username",
+                    "initialPassword",
+                    "profilePhotoPath",
+                    "employeeId",
+                    "doctorId",
+                    "externalUserId",
+                    "employeeCode",
+                    "employeeNumber",
+                    "doctorCode",
+                    "externalCode"
+                }
+            };
+
+            return Ok(ApiResponse<CreateUserOptionsResponse>.Ok(
+                response,
+                "Pilihan form user berhasil diambil."
+            ));
+        }
+
+        [HttpGet("{id:guid}")]
+        [ProducesResponseType(typeof(ApiResponse<UserManagementResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [AccessAction(
+            actionName: "Detail",
+            displayName: "Detail Data",
+            Description = "Melihat detail user",
+            SortOrder = 3
+        )]
+        [AccessPermission("UserManagement", "Detail")]
+        public async Task<IActionResult> GetById(Guid id)
+        {
+            var user = await GetUserWithRelationsAsync(id);
+
+            if (user == null)
+            {
+                return NotFound(ApiResponse<object>.Fail(
+                    StatusCodes.Status404NotFound,
+                    "User tidak ditemukan."
+                ));
+            }
+
+            var response = await BuildUserResponseAsync(user);
+
+            return Ok(ApiResponse<UserManagementResponse>.Ok(
+                response,
+                "Detail user berhasil diambil."
+            ));
+        }
+
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<CreateUserResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -61,11 +263,19 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
             actionName: "Create",
             displayName: "Tambah Data",
             Description = "Membuat user baru",
-            SortOrder = 3
+            SortOrder = 4
         )]
         [AccessPermission("UserManagement", "Create")]
         public async Task<IActionResult> Create([FromBody] CreateUserRequest request)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ApiResponse<object>.Fail(
+                    StatusCodes.Status400BadRequest,
+                    GetModelStateErrorMessage()
+                ));
+            }
+
             var validation = await ValidateProvisionCreateRequestAsync(request);
 
             if (!validation.IsValid)
@@ -91,8 +301,8 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
             try
             {
                 var userCode = await GenerateUserCodeAsync();
-                var username = request.Email.Trim().ToLower();
-                var email = request.Email.Trim().ToLower();
+                var username = request.Email.Trim().ToLowerInvariant();
+                var email = request.Email.Trim().ToLowerInvariant();
                 var initialPassword = GeneratePasswordFromBirthDate(request.BirthDate);
                 var defaultPhotoPath = BuildDefaultProfilePhotoUrl();
 
@@ -112,21 +322,27 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
                 {
                     Id = Guid.NewGuid(),
                     UserCode = userCode,
+
                     UserName = username,
                     NormalizedUserName = username.ToUpperInvariant(),
+
                     Email = email,
                     NormalizedEmail = email.ToUpperInvariant(),
                     EmailConfirmed = true,
+
                     PhoneNumber = Normalize(request.PhoneNumber),
                     FullName = request.FullName.Trim(),
                     UserType = request.UserType,
+
                     BirthDate = request.BirthDate.Date,
                     IdentityNumber = Normalize(request.IdentityNumber),
+
                     DepartmentId = profileResult.DepartmentId,
                     PositionId = profileResult.PositionId,
                     EmployeeId = profileResult.EmployeeId,
                     DoctorId = profileResult.DoctorId,
                     ExternalUserId = profileResult.ExternalUserId,
+
                     IsActive = true,
                     MustChangePassword = true,
                     AccessValidUntil = request.AccessValidUntil,
@@ -227,11 +443,123 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
                     }
                 );
 
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+
                 return BadRequest(ApiResponse<object>.Fail(
                     StatusCodes.Status400BadRequest,
-                    "Terjadi error saat membuat user."
+                    $"Terjadi error saat membuat user: {errorMessage}"
                 ));
             }
+        }
+
+        [HttpPut("{id:guid}/status")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [AccessAction(
+            actionName: "UpdateStatus",
+            displayName: "Ubah Status",
+            Description = "Mengaktifkan atau menonaktifkan user",
+            SortOrder = 5
+        )]
+        [AccessPermission("UserManagement", "UpdateStatus")]
+        public async Task<IActionResult> UpdateStatus(Guid id, [FromQuery] bool isActive)
+        {
+            var user = await _userManager.FindByIdAsync(id.ToString());
+
+            if (user == null)
+            {
+                return NotFound(ApiResponse<object>.Fail(
+                    StatusCodes.Status404NotFound,
+                    "User tidak ditemukan."
+                ));
+            }
+
+            if (user.UserType == UserTypeEnum.SuperAdmin)
+            {
+                return BadRequest(ApiResponse<object>.Fail(
+                    StatusCodes.Status400BadRequest,
+                    "Status SuperAdmin tidak boleh diubah dari menu ini."
+                ));
+            }
+
+            user.IsActive = isActive;
+            user.UpdateDateTime = DateTime.UtcNow;
+
+            var result = await _userManager.UpdateAsync(user);
+
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(x => x.Description));
+
+                return BadRequest(ApiResponse<object>.Fail(
+                    StatusCodes.Status400BadRequest,
+                    errors
+                ));
+            }
+
+            return Ok(ApiResponse<object>.Ok(
+                null,
+                "Status user berhasil diperbarui."
+            ));
+        }
+
+        [HttpPut("{id:guid}/reset-password")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        [AccessAction(
+            actionName: "ResetPassword",
+            displayName: "Reset Password",
+            Description = "Reset password user",
+            SortOrder = 6
+        )]
+        [AccessPermission("UserManagement", "ResetPassword")]
+        public async Task<IActionResult> ResetPassword(Guid id, [FromBody] ResetUserPasswordRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ApiResponse<object>.Fail(
+                    StatusCodes.Status400BadRequest,
+                    GetModelStateErrorMessage()
+                ));
+            }
+
+            var user = await _userManager.FindByIdAsync(id.ToString());
+
+            if (user == null)
+            {
+                return NotFound(ApiResponse<object>.Fail(
+                    StatusCodes.Status404NotFound,
+                    "User tidak ditemukan."
+                ));
+            }
+
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+
+            var result = await _userManager.ResetPasswordAsync(
+                user,
+                resetToken,
+                request.NewPassword
+            );
+
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(x => x.Description));
+
+                return BadRequest(ApiResponse<object>.Fail(
+                    StatusCodes.Status400BadRequest,
+                    errors
+                ));
+            }
+
+            user.MustChangePassword = request.MustChangePassword;
+            user.UpdateDateTime = DateTime.UtcNow;
+
+            await _userManager.UpdateAsync(user);
+
+            return Ok(ApiResponse<object>.Ok(
+                null,
+                "Password user berhasil direset."
+            ));
         }
 
         private async Task<(bool IsValid, string Message)> ValidateProvisionCreateRequestAsync(CreateUserRequest request)
@@ -241,14 +569,23 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
                 return (false, "Nama lengkap wajib diisi.");
             }
 
-            if (request.UserType == UserType.SuperAdmin)
+            if (request.UserType == UserTypeEnum.SuperAdmin)
             {
                 return (false, "User SuperAdmin tidak boleh dibuat dari menu ini.");
             }
 
-            if (request.UserType == UserType.Patient)
+            if (request.UserType == UserTypeEnum.Patient)
             {
                 return (false, "UserType Patient belum didukung dari menu user management ini.");
+            }
+
+            if (request.UserType != UserTypeEnum.Employee &&
+                request.UserType != UserTypeEnum.PermanentDoctor &&
+                request.UserType != UserTypeEnum.GuestDoctor &&
+                request.UserType != UserTypeEnum.ExternalUser &&
+                request.UserType != UserTypeEnum.Vendor)
+            {
+                return (false, "UserType tidak valid untuk pembuatan akun dari menu ini.");
             }
 
             if (request.BirthDate == default)
@@ -296,7 +633,7 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
                 return departmentPositionValidation;
             }
 
-            var email = request.Email.Trim().ToLower();
+            var email = request.Email.Trim().ToLowerInvariant();
 
             var usernameExists = await _userManager.FindByNameAsync(email);
 
@@ -322,39 +659,29 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
             if (identityExists)
             {
                 return (false, "Nomor identitas sudah digunakan oleh user lain.");
-            }
+            }           
 
             return (true, string.Empty);
         }
 
         private async Task<UserProfileProvisionResult> ProvisionProfileAsync(CreateUserRequest request)
         {
-            if (request.EmployeeId.HasValue && request.EmployeeId.Value != Guid.Empty)
-            {
-                return await UseExistingEmployeeProfileAsync(request.EmployeeId.Value);
-            }
-
-            if (request.DoctorId.HasValue && request.DoctorId.Value != Guid.Empty)
-            {
-                return await UseExistingDoctorProfileAsync(request.DoctorId.Value, request.DepartmentId, request.PositionId);
-            }
-
-            if (request.ExternalUserId.HasValue && request.ExternalUserId.Value != Guid.Empty)
-            {
-                return await UseExistingExternalProfileAsync(request.ExternalUserId.Value, request.DepartmentId, request.PositionId);
-            }
-
             return request.UserType switch
             {
-                UserType.Employee => await CreateMinimalEmployeeProfileAsync(request),
+                UserTypeEnum.Employee =>
+                    await CreateMinimalEmployeeProfileAsync(request),
 
-                UserType.PermanentDoctor => await CreateMinimalDoctorProfileAsync(request, DoctorType.PermanentDoctor),
+                UserTypeEnum.PermanentDoctor =>
+                    await CreateMinimalDoctorProfileAsync(request, DoctorTypeEnum.PermanentDoctor),
 
-                UserType.GuestDoctor => await CreateMinimalDoctorProfileAsync(request, DoctorType.GuestDoctor),
+                UserTypeEnum.GuestDoctor =>
+                    await CreateMinimalDoctorProfileAsync(request, DoctorTypeEnum.GuestDoctor),
 
-                UserType.ExternalUser => await CreateMinimalExternalProfileAsync(request),
+                UserTypeEnum.ExternalUser =>
+                    await CreateMinimalExternalProfileAsync(request),
 
-                UserType.Vendor => await CreateMinimalExternalProfileAsync(request),
+                UserTypeEnum.Vendor =>
+                    await CreateMinimalExternalProfileAsync(request),
 
                 _ => UserProfileProvisionResult.Fail("UserType belum didukung untuk pembuatan akun user.")
             };
@@ -363,11 +690,13 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
         private async Task<UserProfileProvisionResult> CreateMinimalEmployeeProfileAsync(CreateUserRequest request)
         {
             var employeeCode = await GenerateEmployeeCodeAsync();
+            var employeeNumber = await GenerateEmployeeNumberAsync();
 
             var employee = new MstEmployee
             {
                 Id = Guid.NewGuid(),
                 EmployeeCode = employeeCode,
+                EmployeeNumber = employeeNumber,
                 FullName = request.FullName.Trim(),
                 Gender = request.Gender,
                 BirthDate = request.BirthDate.Date,
@@ -378,7 +707,7 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
                 Address = Normalize(request.Address),
                 DepartmentId = request.DepartmentId,
                 PositionId = request.PositionId,
-                EmployeeStatus = request.EmployeeStatus ?? EmployeeStatus.Contract,
+                EmployeeStatus = EmployeeStatusEnum.Contract,
                 IsActive = true,
                 CreateDateTime = DateTime.UtcNow,
                 CreateBy = GetCurrentUserId(),
@@ -401,7 +730,7 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
 
         private async Task<UserProfileProvisionResult> CreateMinimalDoctorProfileAsync(
             CreateUserRequest request,
-            DoctorType doctorType)
+            DoctorTypeEnum doctorType)
         {
             var doctorCode = await GenerateDoctorCodeAsync();
 
@@ -445,9 +774,9 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
         {
             var externalCode = await GenerateExternalCodeAsync();
 
-            var externalUserType = request.UserType == UserType.Vendor
-                ? ExternalUserType.Vendor
-                : request.ExternalUserType ?? ExternalUserType.Other;
+            var externalUserType = request.UserType == UserTypeEnum.Vendor
+                ? ExternalUserTypeEnum.Vendor
+                : ExternalUserTypeEnum.Other;
 
             var externalUser = new MstExternalUser
             {
@@ -455,9 +784,6 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
                 ExternalCode = externalCode,
                 ExternalUserType = externalUserType,
                 FullName = request.FullName.Trim(),
-                CompanyName = Normalize(request.CompanyName),
-                CompanyCode = Normalize(request.CompanyCode),
-                JobTitle = Normalize(request.JobTitle),
                 PhoneNumber = Normalize(request.PhoneNumber),
                 WhatsAppNumber = Normalize(request.PhoneNumber),
                 Email = Normalize(request.Email),
@@ -477,122 +803,6 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
             return UserProfileProvisionResult.Ok(
                 departmentId: request.DepartmentId,
                 positionId: request.PositionId,
-                employeeId: null,
-                doctorId: null,
-                externalUserId: externalUser.Id
-            );
-        }
-
-        private async Task<UserProfileProvisionResult> UseExistingEmployeeProfileAsync(Guid employeeId)
-        {
-            var employee = await _dbContext.MstEmployees
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x =>
-                    x.Id == employeeId &&
-                    x.IsActive &&
-                    !x.IsDelete);
-
-            if (employee == null)
-            {
-                return UserProfileProvisionResult.Fail("Employee tidak valid atau tidak aktif.");
-            }
-
-            var alreadyUsed = await _dbContext.Users
-                .AnyAsync(x => x.EmployeeId == employee.Id);
-
-            if (alreadyUsed)
-            {
-                return UserProfileProvisionResult.Fail("Employee ini sudah terhubung dengan akun user lain.");
-            }
-
-            return UserProfileProvisionResult.Ok(
-                departmentId: employee.DepartmentId,
-                positionId: employee.PositionId,
-                employeeId: employee.Id,
-                doctorId: null,
-                externalUserId: null
-            );
-        }
-
-        private async Task<UserProfileProvisionResult> UseExistingDoctorProfileAsync(
-            Guid doctorId,
-            Guid departmentId,
-            Guid positionId)
-        {
-            var doctor = await _dbContext.MstDoctors
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x =>
-                    x.Id == doctorId &&
-                    x.IsActive &&
-                    !x.IsDelete);
-
-            if (doctor == null)
-            {
-                return UserProfileProvisionResult.Fail("Doctor tidak valid atau tidak aktif.");
-            }
-
-            var alreadyUsed = await _dbContext.Users
-                .AnyAsync(x => x.DoctorId == doctor.Id);
-
-            if (alreadyUsed)
-            {
-                return UserProfileProvisionResult.Fail("Doctor ini sudah terhubung dengan akun user lain.");
-            }
-
-            var resolvedDepartmentId = doctor.DepartmentId ?? departmentId;
-            var resolvedPositionId = doctor.PositionId ?? positionId;
-
-            var validation = await ValidateDepartmentAndPositionAsync(resolvedDepartmentId, resolvedPositionId);
-
-            if (!validation.IsValid)
-            {
-                return UserProfileProvisionResult.Fail(validation.Message);
-            }
-
-            return UserProfileProvisionResult.Ok(
-                departmentId: resolvedDepartmentId,
-                positionId: resolvedPositionId,
-                employeeId: null,
-                doctorId: doctor.Id,
-                externalUserId: null
-            );
-        }
-
-        private async Task<UserProfileProvisionResult> UseExistingExternalProfileAsync(
-            Guid externalUserId,
-            Guid departmentId,
-            Guid positionId)
-        {
-            var externalUser = await _dbContext.MstExternalUsers
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x =>
-                    x.Id == externalUserId &&
-                    x.IsActive &&
-                    !x.IsDelete);
-
-            if (externalUser == null)
-            {
-                return UserProfileProvisionResult.Fail("External user tidak valid atau tidak aktif.");
-            }
-
-            var alreadyUsed = await _dbContext.Users
-                .AnyAsync(x => x.ExternalUserId == externalUser.Id);
-
-            if (alreadyUsed)
-            {
-                return UserProfileProvisionResult.Fail("External user ini sudah terhubung dengan akun user lain.");
-            }
-
-            var validation = await ValidateDepartmentAndPositionAsync(departmentId, positionId);
-
-            if (!validation.IsValid)
-            {
-                return UserProfileProvisionResult.Fail(validation.Message);
-            }
-
-            return UserProfileProvisionResult.Ok(
-                departmentId: departmentId,
-                positionId: positionId,
                 employeeId: null,
                 doctorId: null,
                 externalUserId: externalUser.Id
@@ -750,13 +960,13 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
                 "Des"
             };
 
-            return $"{birthDate.Day.ToString("D2")}{monthNames[birthDate.Month]}{birthDate.Year}";
+            return $"{birthDate.Day.ToString("D2")}{monthNames[birthDate.Month]}{birthDate.Year}!";
         }
 
         private string BuildDefaultProfilePhotoUrl()
         {
-            var uploadUrl = _configuration["FileStorage:UploadUrl"]?.TrimEnd('/');
-            var folder = _configuration["FileStorage:ProfilePhotoFolder"]?.Trim('/');
+            var uploadUrl = _configuration["FileStorage:UploadUrl"]?.Trim();
+            var folder = _configuration["FileStorage:ProfilePhotoFolder"]?.Trim();
 
             if (string.IsNullOrWhiteSpace(uploadUrl))
             {
@@ -768,9 +978,30 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
                 folder = "default-photo";
             }
 
-            var baseUrl = uploadUrl.EndsWith("/upload", StringComparison.OrdinalIgnoreCase)
-                ? uploadUrl[..^"/upload".Length]
-                : uploadUrl;
+            uploadUrl = uploadUrl.TrimEnd('/');
+            folder = folder.Trim('/');
+
+            if (folder.StartsWith("uploads/", StringComparison.OrdinalIgnoreCase))
+            {
+                folder = folder["uploads/".Length..];
+            }
+
+            if (folder.StartsWith("upload/", StringComparison.OrdinalIgnoreCase))
+            {
+                folder = folder["upload/".Length..];
+            }
+
+            var baseUrl = uploadUrl;
+
+            if (baseUrl.EndsWith("/upload", StringComparison.OrdinalIgnoreCase))
+            {
+                baseUrl = baseUrl[..^"/upload".Length];
+            }
+
+            if (baseUrl.EndsWith("/uploads", StringComparison.OrdinalIgnoreCase))
+            {
+                baseUrl = baseUrl[..^"/uploads".Length];
+            }
 
             return $"{baseUrl}/uploads/{folder}/{DefaultProfilePhotoFileName}";
         }
@@ -833,10 +1064,6 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
         {
             var roles = await _userManager.GetRolesAsync(user);
 
-            var profileCode = GetProfileCode(user);
-            var profileName = GetProfileName(user);
-            var profileType = GetProfileType(user);
-
             return new UserManagementResponse
             {
                 Id = user.Id,
@@ -858,9 +1085,9 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
                 EmployeeId = user.EmployeeId,
                 DoctorId = user.DoctorId,
                 ExternalUserId = user.ExternalUserId,
-                ProfileCode = profileCode,
-                ProfileName = profileName,
-                ProfileType = profileType,
+                ProfileCode = GetProfileCode(user),
+                ProfileName = GetProfileName(user),
+                ProfileType = GetProfileType(user),
                 ProfilePhotoPath = user.ProfilePhotoPath,
                 Roles = roles.ToList(),
                 IsActive = user.IsActive,
@@ -961,6 +1188,39 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
             }
         }
 
+        private string GetModelStateErrorMessage()
+        {
+            return string.Join(", ",
+                ModelState.Values
+                    .SelectMany(x => x.Errors)
+                    .Select(x => string.IsNullOrWhiteSpace(x.ErrorMessage)
+                        ? "Input tidak valid."
+                        : x.ErrorMessage)
+                    .ToList()
+            );
+        }
+
+        private static EnumOptionResponse ToEnumOption<TEnum>(
+            TEnum value,
+            string? displayName = null)
+            where TEnum : struct, System.Enum
+        {
+            return new EnumOptionResponse
+            {
+                Value = Convert.ToInt32(value),
+                Name = value.ToString(),
+                DisplayName = displayName ?? value.ToString()
+            };
+        }
+
+        private static List<EnumOptionResponse> BuildEnumOptions<TEnum>()
+            where TEnum : struct, System.Enum
+        {
+            return System.Enum.GetValues<TEnum>()
+                .Select(x => ToEnumOption(x))
+                .ToList();
+        }
+
         private class UserProfileProvisionResult
         {
             public bool IsValid { get; set; }
@@ -1002,7 +1262,7 @@ namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
                     IsValid = false,
                     Message = message
                 };
-            }            
+            }
         }
     }
 }
