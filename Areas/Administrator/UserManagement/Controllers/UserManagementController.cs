@@ -16,6 +16,7 @@ using DoctorTypeEnum = QuilvianSystemBackend.Areas.Administrator.UserManagement.
 using EmployeeStatusEnum = QuilvianSystemBackend.Areas.Administrator.UserManagement.Enum.EmployeeStatus;
 using ExternalUserTypeEnum = QuilvianSystemBackend.Areas.Administrator.UserManagement.Enum.ExternalUserType;
 using GenderEnum = QuilvianSystemBackend.Areas.Administrator.UserManagement.Enum.Gender;
+using QuilvianSystemBackend.Areas.Corporate.HumanResource.MasterData.Models;
 
 namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Controllers
 {

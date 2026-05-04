@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using QuilvianSystemBackend.Models;
 
-namespace QuilvianSystemBackend.Areas.Corporate.EmployeeManagement.Attendance.Models
+namespace QuilvianSystemBackend.Areas.Corporate.HumanResource.Attendance.Models
 {
     [Table("EmpAttendance", Schema = "public")]
     public class EmpAttendance : IdentityModel

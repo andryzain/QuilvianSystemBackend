@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuilvianSystemBackend.Areas.Administrator.UserManagement.DTOs;
 using QuilvianSystemBackend.Areas.Administrator.UserManagement.Models;
+using QuilvianSystemBackend.Areas.Corporate.HumanResource.MasterData.Models;
 using QuilvianSystemBackend.Attributes;
 using QuilvianSystemBackend.Repositories;
 using QuilvianSystemBackend.Responses;

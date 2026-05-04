@@ -177,9 +177,12 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
+app.MapHealthChecks("/health");
 
 // Seeder SuperAdmin
 // Ini TIDAK melakukan migration otomatis.

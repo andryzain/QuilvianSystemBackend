@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
-namespace QuilvianSystemBackend.Areas.Administrator.MasterData.Models
+namespace QuilvianSystemBackend.Areas.Corporate.HumanResource.MasterData.Models
 {
     [Table("MstPosition", Schema = "public")]
     public class MstPosition : IdentityModel

@@ -1,11 +1,11 @@
-﻿using QuilvianSystemBackend.Areas.Administrator.MasterData.Models;
-using QuilvianSystemBackend.Areas.Administrator.UserManagement.Enum;
+﻿using QuilvianSystemBackend.Areas.Administrator.UserManagement.Enum;
+using QuilvianSystemBackend.Areas.Administrator.UserManagement.Models;
 using QuilvianSystemBackend.Enum;
 using QuilvianSystemBackend.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace QuilvianSystemBackend.Areas.Administrator.UserManagement.Models
+namespace QuilvianSystemBackend.Areas.Corporate.HumanResource.MasterData.Models
 {
     [Table("MstDoctor", Schema = "public")]
     public class MstDoctor : IdentityModel
