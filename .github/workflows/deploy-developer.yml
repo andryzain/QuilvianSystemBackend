@@ -16,7 +16,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ghcr.io/andyrial/quilviansystembackend
+  IMAGE_NAME: ghcr.io/andryzain/quilviansystembackend
   IMAGE_TAG: developer
 
 jobs:
